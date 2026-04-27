@@ -82,6 +82,7 @@ const tokenSupplyLegendTotal = document.getElementById('tokenSupplyLegendTotal')
 const tokenPnlBarsTotal = document.getElementById('tokenPnlBarsTotal') as HTMLElement;
 const tokenSupplySelectedTitle = document.getElementById('tokenSupplySelectedTitle') as HTMLElement;
 const tokenPnlSelectedTitle = document.getElementById('tokenPnlSelectedTitle') as HTMLElement;
+const tokenTopVolumeSelectedTitle = document.getElementById('tokenTopVolumeSelectedTitle') as HTMLElement;
 
 const topTradersSection = document.getElementById('topTradersSection') as HTMLElement;
 const topTradersLoading = document.getElementById('topTradersLoading') as HTMLElement;
@@ -94,6 +95,8 @@ const tokenTopPnlLoading = document.getElementById('tokenTopPnlLoading') as HTML
 const tokenTopPnlError = document.getElementById('tokenTopPnlError') as HTMLElement;
 const tokenTopPnlMeta = document.getElementById('tokenTopPnlMeta') as HTMLElement;
 const tokenTopPnlBody = document.getElementById('tokenTopPnlBody') as HTMLElement;
+const tokenTopPnl24hVolumeHeader = document.getElementById('tokenTopPnl24hVolumeHeader') as HTMLElement;
+const tokenTopPnl24hTradesHeader = document.getElementById('tokenTopPnl24hTradesHeader') as HTMLElement;
 
 const SEARCH_MODE_KEY = 'topTradersSearchMode';
 const MAX_FETCH_RETRIES = 5;
@@ -187,6 +190,17 @@ function usdToneClass(n: number | null | undefined): string {
 
 function formatUsdCell(n: number | null | undefined): string {
   return `<span class="usd-tone ${usdToneClass(n)}">${formatUsdFull(n)}</span>`;
+}
+
+function applyTokenTopPnl24hColumnVisibility(): void {
+  const resolution = tokenTopPnlResolution.value.trim().toLowerCase();
+  const is24hResolution = resolution === '1d' || resolution === '24h' || resolution === '24hr';
+  const show24hColumns = !is24hResolution;
+  tokenTopPnl24hVolumeHeader.hidden = !show24hColumns;
+  tokenTopPnl24hTradesHeader.hidden = !show24hColumns;
+  document.querySelectorAll<HTMLElement>('.token-top-pnl-24h-col').forEach((cell) => {
+    cell.hidden = !show24hColumns;
+  });
 }
 
 function formatPrice(n: number | null | undefined): string {
@@ -410,12 +424,13 @@ function renderTokenTopPnlTraders(
         <td style="text-align:right">${formatUsdCell(row.realizedPnlUsd)}</td>
         <td style="text-align:right">${formatUsdCell(row.unrealizedPnlUsd)}</td>
         <td style="text-align:right">${formatUsdCell(row.totalVolumeUsd)}</td>
-        <td style="text-align:right">${formatUsdCell(vol24h)}</td>
+        <td class="token-top-pnl-24h-col" style="text-align:right">${formatUsdCell(vol24h)}</td>
         <td style="text-align:right">${formatInt(row.tradesCount)}</td>
-        <td style="text-align:right">${formatInt(trades24h)}</td>
+        <td class="token-top-pnl-24h-col" style="text-align:right">${formatInt(trades24h)}</td>
       </tr>`;
     }).join('')
-    : '<tr><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>';
+    : '<tr><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="token-top-pnl-24h-col">—</td><td>—</td><td class="token-top-pnl-24h-col">—</td></tr>';
+  applyTokenTopPnl24hColumnVisibility();
 }
 
 function toNum(value: number | string | undefined): number {
@@ -431,11 +446,17 @@ function formatResolutionSectionLabel(resolution: string): string {
   const amount = Number(match[1]);
   const unit = match[2];
   if (!Number.isFinite(amount) || amount <= 0) return resolution;
+  if (unit === 'd' && amount === 1) return '24hr';
+  if (unit === 'h' && amount === 24) return '24hr';
   if (unit === 'd') return `${amount} Day${amount === 1 ? '' : 's'}`;
   if (unit === 'h') return `${amount} Hour${amount === 1 ? '' : 's'}`;
   if (unit === 'm') return `${amount} Minute${amount === 1 ? '' : 's'}`;
   if (unit === 'w') return `${amount} Week${amount === 1 ? '' : 's'}`;
   return resolution;
+}
+
+function formatResolutionForTitle(resolutionLabel: string): string {
+  return resolutionLabel.toLowerCase() === '24hr' ? '24Hr' : resolutionLabel;
 }
 
 function renderPieLegendRow(label: string, percentage: number, volume: string, color: string): string {
@@ -444,10 +465,20 @@ function renderPieLegendRow(label: string, percentage: number, volume: string, c
     <div class="token-supply-legend-content">
       <div class="token-supply-legend-label">${label}</div>
       <ul class="token-supply-legend-sublist">
-        <li><span class="token-supply-legend-pct">${percentage.toFixed(2)}%</span> <span class="token-supply-legend-usd">(${volume})</span></li>
+        <li><span class="token-supply-legend-pct">${formatPctSmart(percentage)}</span> <span class="token-supply-legend-usd">(${volume})</span></li>
       </ul>
     </div>
   </div>`;
+}
+
+function formatPctSmart(value: number): string {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num === 0) return '0%';
+  const abs = Math.abs(num);
+  if (abs >= 0.01) return `${num.toFixed(2)}%`;
+  const decimalsToFirstNonZero = Math.ceil(-Math.log10(abs));
+  const decimals = Math.max(3, Math.min(8, decimalsToFirstNonZero));
+  return `${num.toFixed(decimals)}%`;
 }
 
 function getTraderPnl(row: TokenTopPnlTraderRow): number {
@@ -473,7 +504,135 @@ function buildTierEdges(maxAbs: number): number[] {
   return edges;
 }
 
-function renderPnlDistributionBars(rows: TokenTopPnlTraderRow[], topLimit: number, target: HTMLElement): void {
+function buildCountTierEdges(maxVal: number): number[] {
+  // 9 edges => 8 visible groups by default.
+  const edges = [0, 1, 5, 10, 25, 50, 100, 500, 1000];
+  while (edges[edges.length - 1] < maxVal) {
+    edges.push(edges[edges.length - 1] * 10);
+  }
+  return edges;
+}
+
+function applyMinVisibleSlices(realSlices: number[], minVisiblePct = 1.5): number[] {
+  const adjusted = realSlices.map((v) => Math.max(0, v));
+  const tinyEntries = adjusted
+    .map((v, i) => ({ v, i }))
+    .filter(({ v }) => v > 0 && v < minVisiblePct);
+  const tinyIdx = tinyEntries.map(({ i }) => i);
+  if (tinyIdx.length === 0) return adjusted;
+
+  const targetTotal = adjusted.reduce((sum, v) => sum + v, 0);
+  const tinyValues = tinyEntries.map(({ v }) => v);
+  const minTiny = Math.min(...tinyValues);
+  const maxTiny = Math.max(...tinyValues);
+  tinyEntries.forEach(({ v, i }) => {
+    if (maxTiny === minTiny) {
+      adjusted[i] = minVisiblePct;
+      return;
+    }
+    // Boost tiny slices for visibility while preserving their ordering.
+    const normalized = (v - minTiny) / (maxTiny - minTiny);
+    adjusted[i] = minVisiblePct * (1 + normalized * 0.5);
+  });
+  let overflow = adjusted.reduce((sum, v) => sum + v, 0) - targetTotal;
+  if (overflow <= 0) return adjusted;
+
+  const donorIndices = adjusted
+    .map((v, i) => ({ v, i }))
+    .filter(({ i, v }) => !tinyIdx.includes(i) && v > 0)
+    .sort((a, b) => b.v - a.v)
+    .map(({ i }) => i);
+
+  for (const i of donorIndices) {
+    if (overflow <= 0) break;
+    const reducible = Math.max(0, adjusted[i]);
+    const cut = Math.min(reducible, overflow);
+    adjusted[i] -= cut;
+    overflow -= cut;
+  }
+
+  if (overflow > 0) {
+    const total = adjusted.reduce((sum, v) => sum + v, 0);
+    if (total > 0) {
+      return adjusted.map((v) => (v / total) * targetTotal);
+    }
+  }
+
+  return adjusted;
+}
+
+function buildPieGradientWithGaps(
+  slices: number[],
+  colors: string[],
+  gapColor = '#0a0a0d',
+  gapDeg = 1.2
+): string {
+  const entries = slices
+    .map((value, i) => ({ value: Math.max(0, value), color: colors[i] ?? '#27272a' }))
+    .filter((entry) => entry.value > 0);
+
+  if (entries.length === 0) {
+    return `conic-gradient(${gapColor} 0deg 360deg)`;
+  }
+
+  if (entries.length === 1) {
+    return `conic-gradient(${entries[0].color} 0deg 360deg)`;
+  }
+
+  const total = entries.reduce((sum, entry) => sum + entry.value, 0);
+  const totalGap = Math.min(359, gapDeg * entries.length);
+  const usableDeg = Math.max(1, 360 - totalGap);
+  const stops: string[] = [];
+  let cursor = 0;
+
+  entries.forEach((entry) => {
+    const gapStart = cursor;
+    const gapEnd = gapStart + gapDeg;
+    stops.push(`${gapColor} ${gapStart.toFixed(3)}deg ${gapEnd.toFixed(3)}deg`);
+    cursor = gapEnd;
+
+    const sliceDeg = usableDeg * (entry.value / total);
+    const sliceStart = cursor;
+    const sliceEnd = sliceStart + sliceDeg;
+    stops.push(`${entry.color} ${sliceStart.toFixed(3)}deg ${sliceEnd.toFixed(3)}deg`);
+    cursor = sliceEnd;
+  });
+
+  if (cursor < 360) {
+    stops.push(`${gapColor} ${cursor.toFixed(3)}deg 360deg`);
+  }
+
+  return `conic-gradient(${stops.join(', ')})`;
+}
+
+function applyMaxPnlGroups(
+  groups: { label: string; count: number; tone: 'positive' | 'negative' | 'neutral' }[],
+  maxGroups: number
+): { label: string; count: number; tone: 'positive' | 'negative' | 'neutral' }[] {
+  if (groups.length <= maxGroups) return groups;
+  const safeMax = Math.max(1, maxGroups);
+  const keep = groups.slice(0, safeMax - 1);
+  const overflow = groups.slice(safeMax - 1);
+  const overflowCount = overflow.reduce((sum, g) => sum + g.count, 0);
+  const overflowTone = overflow.some((g) => g.tone === 'negative')
+    ? 'negative'
+    : overflow.some((g) => g.tone === 'positive')
+      ? 'positive'
+      : 'neutral';
+  keep.push({
+    label: `${overflow[0]?.label ?? 'Other'} and below`,
+    count: overflowCount,
+    tone: overflowTone,
+  });
+  return keep;
+}
+
+function renderPnlDistributionBars(
+  rows: TokenTopPnlTraderRow[],
+  topLimit: number,
+  target: HTMLElement,
+  maxGroups: number
+): void {
   const limitN = Math.max(1, topLimit);
   const values = rows
     .slice(0, limitN)
@@ -515,7 +674,7 @@ function renderPnlDistributionBars(rows: TokenTopPnlTraderRow[], topLimit: numbe
     groups.push({
       label: upper === 0
         ? `< ${formatUsdBucketValue(0)} to ${formatUsdBucketValue(lower)}`
-        : `${formatUsdBucketValue(lower)} to ${formatUsdBucketValue(upper)}`,
+        : `${formatUsdBucketValue(upper)} to ${formatUsdBucketValue(lower)}`,
       count,
       tone: 'negative',
     });
@@ -526,14 +685,98 @@ function renderPnlDistributionBars(rows: TokenTopPnlTraderRow[], topLimit: numbe
     return;
   }
 
-  const maxCount = Math.max(1, ...groups.map((g) => g.count));
-  target.innerHTML = groups
+  const limitedGroups = applyMaxPnlGroups(groups, maxGroups);
+  const maxCount = Math.max(1, ...limitedGroups.map((g) => g.count));
+  target.innerHTML = limitedGroups
     .map((group) => {
       const widthPct = (group.count / maxCount) * 100;
       return `<div class="token-pnl-bar-row">
         <div class="token-pnl-bar-label">${group.label}</div>
         <div class="token-pnl-bar-track">
           <div class="token-pnl-bar-fill token-pnl-bar-fill--${group.tone}" style="width:${widthPct.toFixed(2)}%"></div>
+          <span class="token-pnl-bar-count">${group.count}</span>
+        </div>
+      </div>`;
+    })
+    .join('');
+}
+
+function renderTradesCountDistributionBars(
+  rows: TokenTopPnlTraderRow[],
+  topLimit: number,
+  target: HTMLElement,
+  maxGroups: number
+): void {
+  const limitN = Math.max(1, topLimit);
+  const values = rows
+    .slice(0, limitN)
+    .map((row) => Math.max(0, toNum(row.tradesCount)))
+    .filter((v) => Number.isFinite(v));
+
+  if (values.length === 0) {
+    target.innerHTML = '<div class="token-pnl-bar-label">No trades-count data for current selection.</div>';
+    return;
+  }
+
+  const positiveValues = values.filter((v) => v > 0);
+  const edges = buildCountTierEdges(Math.max(0, ...positiveValues));
+  const ranges: { lower: number; upper: number }[] = [];
+  for (let i = edges.length - 1; i >= 1; i--) {
+    ranges.push({ lower: edges[i - 1], upper: edges[i] });
+  }
+
+  const countForRange = (lower: number, upper: number): number =>
+    positiveValues.filter((v) => v > lower && v <= upper).length;
+
+  // If the top bucket is empty, split the first non-zero bucket in half
+  // and move its upper half to the first slot for better visibility.
+  while (ranges.length > 0 && countForRange(ranges[0].lower, ranges[0].upper) === 0) {
+    const firstNonZeroIndex = ranges.findIndex((range) => countForRange(range.lower, range.upper) > 0);
+    if (firstNonZeroIndex <= 0) break;
+    const source = ranges[firstNonZeroIndex];
+    const width = source.upper - source.lower;
+    if (width <= 1) break;
+    const mid = Math.round((source.lower + source.upper) / 2);
+    if (mid <= source.lower || mid >= source.upper) break;
+
+    ranges[0] = { lower: mid, upper: source.upper };
+    ranges[firstNonZeroIndex] = { lower: source.lower, upper: mid };
+    break;
+  }
+
+  const groups: { label: string; count: number; tone: 'positive' | 'negative' | 'neutral'; gradientT: number }[] = ranges.map((range, idx, arr) => {
+    const count = countForRange(range.lower, range.upper);
+    const gradientT = arr.length <= 1 ? 1 : 1 - (idx / (arr.length - 1));
+    return {
+      label: range.lower === 0
+        ? `> ${formatInt(range.lower)} to ${formatInt(range.upper)} trades`
+        : `${formatInt(range.lower)} to ${formatInt(range.upper)} trades`,
+      count,
+      tone: 'neutral',
+      gradientT,
+    };
+  });
+
+  const zeroCount = values.filter((v) => v === 0).length;
+  if (zeroCount > 0) groups.push({ label: '0 trades', count: zeroCount, tone: 'neutral', gradientT: 0 });
+
+  if (groups.length === 0) {
+    target.innerHTML = '<div class="token-pnl-bar-label">No non-zero trades-count groups for current selection.</div>';
+    return;
+  }
+
+  const limitedGroups = applyMaxPnlGroups(groups, maxGroups) as Array<
+    { label: string; count: number; tone: 'positive' | 'negative' | 'neutral'; gradientT?: number }
+  >;
+  const maxCount = Math.max(1, ...limitedGroups.map((g) => g.count));
+  target.innerHTML = limitedGroups
+    .map((group) => {
+      const widthPct = (group.count / maxCount) * 100;
+      const t = Math.max(0, Math.min(1, group.gradientT ?? 0));
+      return `<div class="token-pnl-bar-row">
+        <div class="token-pnl-bar-label">${group.label}</div>
+        <div class="token-pnl-bar-track">
+          <div class="token-pnl-bar-fill token-pnl-bar-fill--trade-scale" style="width:${widthPct.toFixed(2)}%; --trade-grad-t:${t.toFixed(4)};"></div>
           <span class="token-pnl-bar-count">${group.count}</span>
         </div>
       </div>`;
@@ -558,16 +801,13 @@ function renderTopTraderVolumeCharts(rows: TokenTopPnlTraderRow[], topLimit: num
   const top11to100Slice = Math.max(0, Math.min(100, (top11to100Vol / denominatorUsd) * 100));
   const top101toNSlice = showTop101Bucket ? Math.max(0, Math.min(100, (top101toNVol / denominatorUsd) * 100)) : 0;
   const remainingSlice = Math.max(0, Math.min(100, (remainingVol / denominatorUsd) * 100));
-
-  const a = top10Slice * 3.6;
-  const b = (top10Slice + top11to100Slice) * 3.6;
-  const c = (top10Slice + top11to100Slice + top101toNSlice) * 3.6;
-  tokenSupplyPie.style.background = `conic-gradient(
-    #3b82f6 0deg ${a}deg,
-    #2563eb ${a}deg ${b}deg,
-    #1d4ed8 ${b}deg ${c}deg,
-    #27272a ${c}deg 360deg
-  )`;
+  const [displayTop10, displayTop11to100, displayTop101toN] = applyMinVisibleSlices(
+    [top10Slice, top11to100Slice, top101toNSlice, remainingSlice]
+  );
+  tokenSupplyPie.style.background = buildPieGradientWithGaps(
+    [displayTop10, displayTop11to100, displayTop101toN, remainingSlice],
+    ['#3b82f6', '#2563eb', '#1d4ed8', '#27272a']
+  );
 
   tokenSupplyLegend.innerHTML = `
     ${renderPieLegendRow('Top 10 traders', top10Slice, formatUsdFull(top10Vol), '#3b82f6')}
@@ -575,7 +815,7 @@ function renderTopTraderVolumeCharts(rows: TokenTopPnlTraderRow[], topLimit: num
     ${showTop101Bucket ? renderPieLegendRow(`Top 101-${limitN.toLocaleString()} traders`, top101toNSlice, formatUsdFull(top101toNVol), '#1d4ed8') : ''}
     ${renderPieLegendRow('Non-top traders', remainingSlice, formatUsdFull(remainingVol), '#27272a')}
   `;
-  renderPnlDistributionBars(rows, topLimit, tokenPnlBars24h);
+  renderPnlDistributionBars(rows, topLimit, tokenPnlBars24h, 9);
 }
 
 function renderTopTraderSelectedResolutionCharts(rows: TokenTopPnlTraderRow[], topLimit: number): void {
@@ -592,28 +832,35 @@ function renderTopTraderSelectedResolutionCharts(rows: TokenTopPnlTraderRow[], t
   const top11to100Slice = Math.max(0, Math.min(100, (top11to100Vol / denominatorUsd) * 100));
   const top101toNSlice = showTop101Bucket ? Math.max(0, Math.min(100, (top101toNVol / denominatorUsd) * 100)) : 0;
   const resolutionLabel = formatResolutionSectionLabel(tokenTopPnlResolution.value);
+  const titleResolution = formatResolutionForTitle(resolutionLabel);
   tokenSupplySelectedTitle.textContent = resolutionLabel;
-  tokenPnlSelectedTitle.textContent = `PnL distribution (${resolutionLabel.toLowerCase()} resolution)`;
+  tokenTopVolumeSelectedTitle.textContent = `Top Traders Volume (Last ${titleResolution})`;
+  tokenPnlSelectedTitle.textContent = resolutionLabel.toLowerCase() === '24hr'
+    ? `Trades count distribution (Last ${titleResolution})`
+    : `PnL distribution (Last ${titleResolution})`;
+  if (resolutionLabel.toLowerCase() === '24hr') {
+    renderTradesCountDistributionBars(rows, topLimit, tokenPnlBarsTotal, 8);
+  } else {
+    renderPnlDistributionBars(rows, topLimit, tokenPnlBarsTotal, 8);
+  }
 
-  const a = top10Slice * 3.6;
-  const b = (top10Slice + top11to100Slice) * 3.6;
-  const c = (top10Slice + top11to100Slice + top101toNSlice) * 3.6;
+  const [displayTop10, displayTop11to100, displayTop101toN] = applyMinVisibleSlices(
+    [top10Slice, top11to100Slice, top101toNSlice]
+  );
   tokenSupplyPieTotal.style.background = showTop101Bucket
-    ? `conic-gradient(
-    #3b82f6 0deg ${a}deg,
-    #2563eb ${a}deg ${b}deg,
-    #1d4ed8 ${b}deg ${c}deg
-  )`
-    : `conic-gradient(
-    #3b82f6 0deg ${a}deg,
-    #2563eb ${a}deg 360deg
-  )`;
+    ? buildPieGradientWithGaps(
+      [displayTop10, displayTop11to100, displayTop101toN],
+      ['#3b82f6', '#2563eb', '#1d4ed8']
+    )
+    : buildPieGradientWithGaps(
+      [displayTop10, displayTop11to100],
+      ['#3b82f6', '#2563eb']
+    );
   tokenSupplyLegendTotal.innerHTML = `
     ${renderPieLegendRow('Top 10 traders', top10Slice, formatUsdFull(top10Vol), '#3b82f6')}
     ${renderPieLegendRow('Top 11-100 traders', top11to100Slice, formatUsdFull(top11to100Vol), '#2563eb')}
     ${showTop101Bucket ? renderPieLegendRow(`Top 101-${limitN.toLocaleString()} traders`, top101toNSlice, formatUsdFull(top101toNVol), '#1d4ed8') : ''}
   `;
-  renderPnlDistributionBars(rows, topLimit, tokenPnlBarsTotal);
 }
 
 async function loadData(): Promise<void> {
@@ -650,13 +897,6 @@ async function loadData(): Promise<void> {
 
         const chartParams = new URLSearchParams(tokenTopPnlParams);
         chartParams.set('resolution', '1d');
-        chartParams.delete('sortByAsc');
-        chartParams.delete('sortByDesc');
-        if ((tokenTopPnlSortDirection.value as SortDirection) === 'asc') {
-          chartParams.set('sortByAsc', 'totalVolumeUsd');
-        } else {
-          chartParams.set('sortByDesc', 'totalVolumeUsd');
-        }
         let chartRows = tokenTopPnlData.data ?? [];
         if ((tokenTopPnlParams.get('resolution') || '').toLowerCase() !== '1d') {
           const tokenTopPnl1dRes = await fetchWithRetry(`/api/tokens/${encodeURIComponent(query)}/top-pnl-traders?${chartParams.toString()}`);
@@ -716,15 +956,25 @@ fetchAllBtn.addEventListener('click', () => {
 
 tokenTopPnlResolution.addEventListener('change', () => {
   const resolutionLabel = formatResolutionSectionLabel(tokenTopPnlResolution.value);
+  const titleResolution = formatResolutionForTitle(resolutionLabel);
   tokenSupplySelectedTitle.textContent = resolutionLabel;
-  tokenPnlSelectedTitle.textContent = `PnL distribution (${resolutionLabel.toLowerCase()} resolution)`;
+  tokenTopVolumeSelectedTitle.textContent = `Top Traders Volume (Last ${titleResolution})`;
+  tokenPnlSelectedTitle.textContent = resolutionLabel.toLowerCase() === '24hr'
+    ? `Trades count distribution (Last ${titleResolution})`
+    : `PnL distribution (Last ${titleResolution})`;
+  applyTokenTopPnl24hColumnVisibility();
 });
 
 const initialResolutionLabel = formatResolutionSectionLabel(tokenTopPnlResolution.value);
+const initialTitleResolution = formatResolutionForTitle(initialResolutionLabel);
 tokenSupplySelectedTitle.textContent = initialResolutionLabel;
-tokenPnlSelectedTitle.textContent = `PnL distribution (${initialResolutionLabel.toLowerCase()} resolution)`;
+tokenTopVolumeSelectedTitle.textContent = `Top Traders Volume (Last ${initialTitleResolution})`;
+tokenPnlSelectedTitle.textContent = initialResolutionLabel.toLowerCase() === '24hr'
+  ? `Trades count distribution (Last ${initialTitleResolution})`
+  : `PnL distribution (Last ${initialTitleResolution})`;
 setSearchMode(getSearchMode());
 if (!mintInput.value.trim()) mintInput.value = DEMO_MINT;
 applySearchModeUI();
 topTradersBody.innerHTML = '<tr><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>';
-tokenTopPnlBody.innerHTML = '<tr><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>';
+tokenTopPnlBody.innerHTML = '<tr><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="token-top-pnl-24h-col">—</td><td>—</td><td class="token-top-pnl-24h-col">—</td></tr>';
+applyTokenTopPnl24hColumnVisibility();
