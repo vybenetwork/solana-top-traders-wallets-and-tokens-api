@@ -241,6 +241,34 @@ app.get('/api/wallets/top-traders', async (req: Request, res: Response) => {
   }
 });
 
+app.get('/api/wallets/:ownerAddress/pnl', async (req: Request, res: Response) => {
+  try {
+    const ownerAddress = param(req, 'ownerAddress').trim();
+    if (!ownerAddress) return res.status(400).json({ error: 'Owner address required' });
+    const resolution = queryOne(req, 'resolution') ?? '1d';
+    const mintAddress = queryOne(req, 'mintAddress');
+    const sortByAsc = queryOne(req, 'sortByAsc');
+    const sortByDesc = queryOne(req, 'sortByDesc') ?? 'realizedPnlUsd';
+    const pageRaw = queryOne(req, 'page');
+    const page =
+      pageRaw != null && !Number.isNaN(Number(pageRaw)) && Number(pageRaw) >= 0
+        ? Number(pageRaw)
+        : undefined;
+    const limit = Math.min(Number(queryOne(req, 'limit')) || 1000, 1000);
+    const data = await client.getWalletPnl(ownerAddress, {
+      resolution,
+      ...(mintAddress ? { mintAddress } : {}),
+      ...(sortByAsc ? { sortByAsc } : { sortByDesc }),
+      ...(page !== undefined ? { page } : {}),
+      limit,
+    });
+    res.json(data);
+  } catch (err) {
+    const status = (err as { response?: { status?: number } })?.response?.status ?? 500;
+    res.status(status).json({ error: toHumanReadableError(err) });
+  }
+});
+
 app.get('/api/tokens/:mint/top-pnl-traders', async (req: Request, res: Response) => {
   try {
     const mint = param(req, 'mint').trim();

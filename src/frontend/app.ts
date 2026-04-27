@@ -38,6 +38,50 @@ interface TokenTopPnlTraderRow {
   tradesCount?: number;
 }
 
+interface WalletPnlSummaryTokenRef {
+  mintAddress?: string;
+  pnlUsd?: number;
+  tokenName?: string;
+  tokenSymbol?: string;
+}
+
+interface WalletPnlSummary {
+  averageTradeUsd?: number;
+  bestPerformingToken?: WalletPnlSummaryTokenRef;
+  losingTradesCount?: number;
+  pnlTrendSevenDays?: number[][];
+  realizedPnlUsd?: number;
+  tradesCount?: number;
+  tradesVolumeUsd?: number;
+  uniqueTokensTraded?: number;
+  unrealizedPnlUsd?: number;
+  winRate?: number;
+  winningTradesCount?: number;
+  worstPerformingToken?: WalletPnlSummaryTokenRef;
+}
+
+interface WalletPnlSideMetrics {
+  transactionCount?: number;
+  volumeUsd?: number;
+  tokenAmount?: number;
+}
+
+interface WalletPnlTokenMetric {
+  mintAddress?: string;
+  tokenName?: string;
+  tokenSymbol?: string;
+  status?: string;
+  realizedPnlUsd?: number;
+  unrealizedPnlUsd?: number;
+  buys?: WalletPnlSideMetrics;
+  sells?: WalletPnlSideMetrics;
+}
+
+interface WalletPnlResponse {
+  summary?: WalletPnlSummary;
+  tokenMetrics?: WalletPnlTokenMetric[];
+}
+
 type SearchMode = 'token' | 'wallet';
 type SortDirection = 'asc' | 'desc';
 
@@ -56,6 +100,8 @@ const walletResolution = document.getElementById('walletResolution') as HTMLSele
 const walletLabel = document.getElementById('walletLabel') as HTMLSelectElement;
 const walletSortField = document.getElementById('walletSortField') as HTMLSelectElement;
 const walletSortDirection = document.getElementById('walletSortDirection') as HTMLSelectElement;
+const walletPnlMintAddress = document.getElementById('walletPnlMintAddress') as HTMLInputElement;
+const walletPnlSortField = document.getElementById('walletPnlSortField') as HTMLSelectElement;
 const walletPage = document.getElementById('walletPage') as HTMLInputElement;
 const walletLimit = document.getElementById('walletLimit') as HTMLSelectElement;
 
@@ -91,7 +137,9 @@ const topTradersSection = document.getElementById('topTradersSection') as HTMLEl
 const topTradersLoading = document.getElementById('topTradersLoading') as HTMLElement;
 const topTradersError = document.getElementById('topTradersError') as HTMLElement;
 const topTradersMeta = document.getElementById('topTradersMeta') as HTMLElement;
-const topTradersBody = document.getElementById('topTradersBody') as HTMLElement;
+const topTradersCards = document.getElementById('topTradersCards') as HTMLElement;
+const walletPnlMeta = document.getElementById('walletPnlMeta') as HTMLElement;
+const walletPnlDetails = document.getElementById('walletPnlDetails') as HTMLElement;
 
 const tokenTopPnlSection = document.getElementById('tokenTopPnlSection') as HTMLElement;
 const tokenTopPnlLoading = document.getElementById('tokenTopPnlLoading') as HTMLElement;
@@ -109,6 +157,7 @@ const SEARCH_MODE_KEY = 'topTradersSearchMode';
 const MAX_FETCH_RETRIES = 5;
 const FETCH_RETRY_DELAY_MS = 2000;
 const DEMO_MINT = 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263';
+const DEMO_WALLET = 'CyaE1VxvBrahnPWkqm5VsdCvyS2QmNht2UFrKJHga54o';
 
 function getSearchMode(): SearchMode {
   return localStorage.getItem(SEARCH_MODE_KEY) === 'wallet' ? 'wallet' : 'token';
@@ -129,7 +178,15 @@ function applySearchModeUI(): void {
     : '<span class="label-icon field-icon icon-user" aria-hidden="true"></span>Wallet address or name (ilikeFilter)';
   mintInput.placeholder = tokenMode
     ? 'e.g. DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263'
-    : 'e.g. 7xKXtg2CW4fXh1vM4dfV2Qx9tqGk8hL38Gy4X9Kq8p7y';
+    : `e.g. ${DEMO_WALLET}`;
+  const currentValue = mintInput.value.trim();
+  if (
+    !currentValue
+    || (!tokenMode && currentValue === DEMO_MINT)
+    || (tokenMode && currentValue === DEMO_WALLET)
+  ) {
+    mintInput.value = tokenMode ? DEMO_MINT : DEMO_WALLET;
+  }
   fetchAllBtn.textContent = tokenMode ? 'Load token analytics' : 'Search top traders';
   tokenSection.hidden = !tokenMode;
   tokenSupplyPanel.hidden = !tokenMode;
@@ -385,6 +442,86 @@ function buildWalletTopTraderParams(mode: SearchMode, query: string): URLSearchP
   return params;
 }
 
+function looksLikeSolanaAddress(value: string): boolean {
+  const trimmed = value.trim();
+  return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(trimmed);
+}
+
+function buildWalletPnlParams(): URLSearchParams {
+  const params = new URLSearchParams({
+    resolution: walletResolution.value,
+    limit: walletLimit.value,
+    page: String(Math.max(0, Number(walletPage.value) || 0)),
+  });
+  const mintAddress = walletPnlMintAddress.value.trim();
+  if (mintAddress) params.set('mintAddress', mintAddress);
+  const direction = walletSortDirection.value as SortDirection;
+  const field = walletPnlSortField.value;
+  if (direction === 'asc') {
+    params.set('sortByAsc', field);
+  } else {
+    params.set('sortByDesc', field);
+  }
+  return params;
+}
+
+function renderWalletPnl(
+  ownerAddress: string,
+  data: WalletPnlResponse,
+  queryParams: URLSearchParams
+): void {
+  const summary = data.summary ?? {};
+  const tokenMetrics = data.tokenMetrics ?? [];
+  walletPnlMeta.textContent = `GET /v4/wallets/${ownerAddress}/pnl with ${queryParams.toString()} returned ${tokenMetrics.length} token metric row(s).`;
+
+  const tokenLabel = (token?: WalletPnlSummaryTokenRef): string => {
+    if (!token || !token.mintAddress) return '—';
+    const symbol = token.tokenSymbol || token.tokenName || truncateAddress(token.mintAddress);
+    return `<a href="https://vybe.fyi/tokens/${encodeURIComponent(token.mintAddress)}" target="_blank" rel="noopener noreferrer" class="mono" title="${token.mintAddress}">${symbol}</a>`;
+  };
+
+  const summaryHtml = `<section class="token-stats-group">
+      <h3 class="token-stats-group-title"><span>Wallet PnL summary</span></h3>
+      <dl class="token-stats">
+        <dt>Realized PnL</dt><dd>${formatUsdCell(summary.realizedPnlUsd)}</dd>
+        <dt>Unrealized PnL</dt><dd>${formatUsdCell(summary.unrealizedPnlUsd)}</dd>
+        <dt>Trades</dt><dd>${formatTradesCountCell(summary.tradesCount)}</dd>
+        <dt>Trade volume</dt><dd>${formatUsdCell(summary.tradesVolumeUsd)}</dd>
+        <dt>Win rate</dt><dd>${summary.winRate != null ? `${Math.round(Number(summary.winRate))}%` : '—'}</dd>
+        <dt>Avg trade</dt><dd>${formatUsdCell(summary.averageTradeUsd)}</dd>
+        <dt>Winning trades</dt><dd>${formatIntFull(summary.winningTradesCount)}</dd>
+        <dt>Losing trades</dt><dd>${formatIntFull(summary.losingTradesCount)}</dd>
+        <dt>Unique tokens</dt><dd>${formatIntFull(summary.uniqueTokensTraded)}</dd>
+        <dt>Best token</dt><dd>${tokenLabel(summary.bestPerformingToken)}${summary.bestPerformingToken?.pnlUsd != null ? ` (${formatUsdFull(summary.bestPerformingToken.pnlUsd)})` : ''}</dd>
+        <dt>Worst token</dt><dd>${tokenLabel(summary.worstPerformingToken)}${summary.worstPerformingToken?.pnlUsd != null ? ` (${formatUsdFull(summary.worstPerformingToken.pnlUsd)})` : ''}</dd>
+      </dl>
+    </section>`;
+
+  const metricsHtml = tokenMetrics.length
+    ? `<div class="wallet-pnl-token-grid">${tokenMetrics.slice(0, 12).map((metric) => {
+      const mint = metric.mintAddress || '';
+      const symbol = metric.tokenSymbol || metric.tokenName || (mint ? truncateAddress(mint) : '—');
+      const tokenLink = mint
+        ? `<a href="https://vybe.fyi/tokens/${encodeURIComponent(mint)}" target="_blank" rel="noopener noreferrer" class="mono" title="${mint}">${symbol}</a>`
+        : symbol;
+      return `<section class="token-stats-group wallet-pnl-token-card">
+          <h3 class="token-stats-group-title"><span>${tokenLink}</span></h3>
+          <dl class="token-stats">
+            <dt>Status</dt><dd>${metric.status ?? '—'}</dd>
+            <dt>Realized PnL</dt><dd>${formatUsdCell(metric.realizedPnlUsd)}</dd>
+            <dt>Unrealized PnL</dt><dd>${formatUsdCell(metric.unrealizedPnlUsd)}</dd>
+            <dt>Buys (tx)</dt><dd>${formatIntFull(metric.buys?.transactionCount)}</dd>
+            <dt>Sells (tx)</dt><dd>${formatIntFull(metric.sells?.transactionCount)}</dd>
+            <dt>Buy volume</dt><dd>${formatUsdCell(metric.buys?.volumeUsd)}</dd>
+            <dt>Sell volume</dt><dd>${formatUsdCell(metric.sells?.volumeUsd)}</dd>
+          </dl>
+        </section>`;
+    }).join('')}</div>`
+    : '<div class="token-stats-group wallet-pnl-empty">No token metrics returned for this wallet and filter.</div>';
+
+  walletPnlDetails.innerHTML = summaryHtml + metricsHtml;
+}
+
 function buildTokenTopPnlParams(): URLSearchParams {
   const params = new URLSearchParams({
     resolution: tokenTopPnlResolution.value,
@@ -407,7 +544,7 @@ function renderTopTraders(data: { data?: TopTraderRow[] }, mode: SearchMode, que
   topTradersMeta.textContent = list.length
     ? `GET /v4/wallets/top-traders with ${scope} and ${queryParams.toString()} returned ${list.length} row(s).`
     : `GET /v4/wallets/top-traders with ${scope} returned 0 rows.`;
-  topTradersBody.innerHTML = list.length
+  topTradersCards.innerHTML = list.length
     ? list.map((row, i) => {
       const rank = i + 1;
       const addr = row.accountAddress;
@@ -416,16 +553,27 @@ function renderTopTraders(data: { data?: TopTraderRow[] }, mode: SearchMode, que
         ? `<a href="https://vybe.fyi/wallets/${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer" class="mono" title="${addr}">${display}</a>`
         : `<span class="mono">${display}</span>`;
       const m = row.metrics || {};
-      return `<tr>
-        <td>${rank}</td>
-        <td>${accountLink}</td>
-        <td>${formatUsdCell(m.realizedPnlUsd)}</td>
-        <td style="text-align:right">${formatInt(m.tradesCount)}</td>
-        <td style="text-align:right">${formatUsdCell(m.tradesVolumeUsd)}</td>
-        <td style="text-align:right">${m.winRate != null ? `${Math.round(Number(m.winRate))}%` : '—'}</td>
-      </tr>`;
+      return `<section class="token-stats-group wallet-top-trader-card">
+        <h3 class="token-stats-group-title"><span>#${rank} Trader</span></h3>
+        <dl class="token-stats">
+          <dt>Account</dt><dd>${accountLink}</dd>
+          <dt>Realized PnL</dt><dd>${formatUsdCell(m.realizedPnlUsd)}</dd>
+          <dt>Trades</dt><dd>${formatTradesCountCell(m.tradesCount)}</dd>
+          <dt>Volume</dt><dd>${formatUsdCell(m.tradesVolumeUsd)}</dd>
+          <dt>Win rate</dt><dd>${m.winRate != null ? `${Math.round(Number(m.winRate))}%` : '—'}</dd>
+        </dl>
+      </section>`;
     }).join('')
-    : '<tr><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>';
+    : `<section class="token-stats-group wallet-top-trader-card">
+        <h3 class="token-stats-group-title"><span>Top trader</span></h3>
+        <dl class="token-stats">
+          <dt>Account</dt><dd>—</dd>
+          <dt>Realized PnL</dt><dd>—</dd>
+          <dt>Trades</dt><dd>—</dd>
+          <dt>Volume</dt><dd>—</dd>
+          <dt>Win rate</dt><dd>—</dd>
+        </dl>
+      </section>`;
 }
 
 function renderTokenTopPnlTraders(
@@ -1072,9 +1220,28 @@ async function loadData(): Promise<void> {
     } else {
       const topRes = await fetchWithRetry(`/api/wallets/top-traders?${walletTopTraderParams.toString()}`);
       if (topRes.ok) {
-        renderTopTraders(await topRes.json() as { data?: TopTraderRow[] }, mode, query, walletTopTraderParams);
+        const topData = await topRes.json() as { data?: TopTraderRow[] };
+        renderTopTraders(topData, mode, query, walletTopTraderParams);
+        const topList = topData.data ?? [];
+        const ownerAddressFromList = (topList[0]?.accountAddress || '').trim();
+        const ownerAddress = ownerAddressFromList || (looksLikeSolanaAddress(query) ? query : '');
+        if (ownerAddress) {
+          const walletPnlParams = buildWalletPnlParams();
+          const walletPnlRes = await fetchWithRetry(`/api/wallets/${encodeURIComponent(ownerAddress)}/pnl?${walletPnlParams.toString()}`);
+          if (walletPnlRes.ok) {
+            renderWalletPnl(ownerAddress, await walletPnlRes.json() as WalletPnlResponse, walletPnlParams);
+          } else {
+            walletPnlMeta.textContent = `GET /v4/wallets/${ownerAddress}/pnl failed (${walletPnlRes.status}).`;
+            walletPnlDetails.innerHTML = '<div class="token-stats-group wallet-pnl-empty">Wallet PnL request failed for current selection.</div>';
+          }
+        } else {
+          walletPnlMeta.textContent = 'Wallet PnL endpoint not called: no wallet address resolved from current filter.';
+          walletPnlDetails.innerHTML = '<div class="token-stats-group wallet-pnl-empty">No wallet address found in top-traders results for this filter.</div>';
+        }
       } else {
         showSectionError(topTradersError, `Failed (${topRes.status})`);
+        walletPnlMeta.textContent = '—';
+        walletPnlDetails.innerHTML = '<div class="token-stats-group wallet-pnl-empty">Wallet PnL unavailable while top-traders request fails.</div>';
       }
     }
   } catch {
@@ -1119,9 +1286,27 @@ tokenPnlSelectedTitle.textContent = initialResolutionLabel.toLowerCase() === '24
   : `PnL distribution (Last ${initialTitleResolution})`;
 tokenTradesCountSelectedTitle.textContent = `Trades count distribution (Last ${initialTitleResolution})`;
 setSearchMode(getSearchMode());
-if (!mintInput.value.trim()) mintInput.value = DEMO_MINT;
 applySearchModeUI();
 applySelectedTradesVerticalRowVisibility();
-topTradersBody.innerHTML = '<tr><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>';
+topTradersCards.innerHTML = `<section class="token-stats-group wallet-top-trader-card">
+  <h3 class="token-stats-group-title"><span>Top trader</span></h3>
+  <dl class="token-stats">
+    <dt>Account</dt><dd>—</dd>
+    <dt>Realized PnL</dt><dd>—</dd>
+    <dt>Trades</dt><dd>—</dd>
+    <dt>Volume</dt><dd>—</dd>
+    <dt>Win rate</dt><dd>—</dd>
+  </dl>
+</section>`;
+walletPnlMeta.textContent = '—';
+walletPnlDetails.innerHTML = `<section class="token-stats-group">
+  <h3 class="token-stats-group-title"><span>Wallet PnL summary</span></h3>
+  <dl class="token-stats">
+    <dt>Realized PnL</dt><dd>—</dd>
+    <dt>Unrealized PnL</dt><dd>—</dd>
+    <dt>Trades</dt><dd>—</dd>
+    <dt>Win rate</dt><dd>—</dd>
+  </dl>
+</section>`;
 tokenTopPnlBody.innerHTML = '<tr><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="token-top-pnl-24h-col">—</td><td>—</td><td class="token-top-pnl-24h-col">—</td></tr>';
 applyTokenTopPnl24hColumnVisibility();

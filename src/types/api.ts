@@ -83,6 +83,61 @@ export interface VybeTopTradersResponse {
   [key: string]: unknown;
 }
 
+export interface VybeWalletPnlTokenRef {
+  mintAddress?: string;
+  pnlUsd?: number;
+  tokenLogoUrl?: string;
+  tokenName?: string;
+  tokenSymbol?: string;
+  [key: string]: unknown;
+}
+
+export interface VybeWalletPnlSummary {
+  averageTradeUsd?: number;
+  bestPerformingToken?: VybeWalletPnlTokenRef;
+  losingTradesCount?: number;
+  pnlTrendSevenDays?: number[][];
+  realizedPnlUsd?: number;
+  tradesCount?: number;
+  tradesVolumeUsd?: number;
+  uniqueTokensTraded?: number;
+  unrealizedPnlUsd?: number;
+  winRate?: number;
+  winningTradesCount?: number;
+  worstPerformingToken?: VybeWalletPnlTokenRef;
+  [key: string]: unknown;
+}
+
+export interface VybeWalletPnlSideMetrics {
+  latestTradeBlocktime?: number;
+  latestTradeSignature?: string;
+  tokenAmount?: number;
+  transactionCount?: number;
+  volumeUsd?: number;
+  [key: string]: unknown;
+}
+
+export interface VybeWalletPnlTokenMetric {
+  buys?: VybeWalletPnlSideMetrics;
+  latestTradeBlocktime?: number;
+  mintAddress?: string;
+  realizedPnlUsd?: number;
+  sells?: VybeWalletPnlSideMetrics;
+  status?: string;
+  tokenLabels?: string[];
+  tokenLogoUrl?: string;
+  tokenName?: string;
+  tokenSymbol?: string;
+  unrealizedPnlUsd?: number;
+  [key: string]: unknown;
+}
+
+export interface VybeWalletPnlResponse {
+  summary?: VybeWalletPnlSummary;
+  tokenMetrics?: VybeWalletPnlTokenMetric[];
+  [key: string]: unknown;
+}
+
 /** Top PnL trader from GET /v4/tokens/{mintAddress}/top-pnl-traders */
 export interface VybeTokenTopPnlTrader {
   traderAddress: string;

@@ -132,6 +132,39 @@
         </div>
 
         <div class="field">
+          <label for="walletPnlMintAddress">
+            <span class="label-icon field-icon icon-tag" aria-hidden="true"></span>
+            Wallet PnL mint
+          </label>
+          <div class="field-control">
+            <span class="field-icon icon-tag" aria-hidden="true"></span>
+            <input type="text" id="walletPnlMintAddress" placeholder="optional mintAddress filter" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="walletPnlSortField">
+            <span class="label-icon field-icon icon-sort" aria-hidden="true"></span>
+            Wallet PnL sort
+          </label>
+          <div class="field-control">
+            <span class="field-icon icon-sort" aria-hidden="true"></span>
+            <select id="walletPnlSortField">
+              <option value="realizedPnlUsd" selected>realizedPnlUsd</option>
+              <option value="unrealizedPnlUsd">unrealizedPnlUsd</option>
+              <option value="mintAddress">mintAddress</option>
+              <option value="tokenSymbol">tokenSymbol</option>
+              <option value="buysTransactionCount">buysTransactionCount</option>
+              <option value="buysTokenAmount">buysTokenAmount</option>
+              <option value="buysVolumeUsd">buysVolumeUsd</option>
+              <option value="sellsTransactionCount">sellsTransactionCount</option>
+              <option value="sellsTokenAmount">sellsTokenAmount</option>
+              <option value="sellsVolumeUsd">sellsVolumeUsd</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
           <label for="walletSortDirection">
             <span class="label-icon field-icon icon-sort" aria-hidden="true"></span>
             Sort Direction
@@ -323,20 +356,29 @@
       </div>
       <div class="top-traders-content" id="topTradersContentWrap">
         <p class="meta" id="topTradersMeta">—</p>
-        <div class="table-wrap">
-          <table id="topTradersTable">
-            <thead>
-              <tr>
-                <th style="text-align: left">#</th>
-                <th style="text-align: left">Account</th>
-                <th style="text-align: left">Realized PnL (USD)</th>
-                <th style="text-align: right">Trades</th>
-                <th style="text-align: right">Volume (USD)</th>
-                <th style="text-align: right">Win rate</th>
-              </tr>
-            </thead>
-            <tbody id="topTradersBody"></tbody>
-          </table>
+        <div class="wallet-top-traders-grid" id="topTradersCards">
+          <section class="token-stats-group wallet-top-trader-card">
+            <h3 class="token-stats-group-title"><span>Top trader</span></h3>
+            <dl class="token-stats">
+              <dt>Account</dt><dd>—</dd>
+              <dt>Realized PnL</dt><dd>—</dd>
+              <dt>Trades</dt><dd>—</dd>
+              <dt>Volume</dt><dd>—</dd>
+              <dt>Win rate</dt><dd>—</dd>
+            </dl>
+          </section>
+        </div>
+        <p class="meta" id="walletPnlMeta">—</p>
+        <div class="wallet-pnl-details" id="walletPnlDetails">
+          <section class="token-stats-group">
+            <h3 class="token-stats-group-title"><span>Wallet PnL summary</span></h3>
+            <dl class="token-stats">
+              <dt>Realized PnL</dt><dd>—</dd>
+              <dt>Unrealized PnL</dt><dd>—</dd>
+              <dt>Trades</dt><dd>—</dd>
+              <dt>Win rate</dt><dd>—</dd>
+            </dl>
+          </section>
         </div>
       </div>
     </section>
@@ -377,6 +419,6 @@
       <pre id="errorText"></pre>
     </section>
   </div>
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>

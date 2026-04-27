@@ -8,6 +8,7 @@ import type { AxiosInstance } from 'axios';
 import type {
   VybeProgramsResponse,
   VybeTopTradersResponse,
+  VybeWalletPnlResponse,
   VybeTokenTopPnlTradersResponse,
 } from '../types/api.js';
 import { withRetry } from './client.js';
@@ -131,6 +132,15 @@ export interface GetTopPnlTradersOptions {
   page?: number;
 }
 
+export interface GetWalletPnlOptions {
+  resolution?: string;
+  mintAddress?: string;
+  sortByAsc?: string;
+  sortByDesc?: string;
+  limit?: number;
+  page?: number;
+}
+
 /**
  * Fetch token top PnL traders.
  * @param http - Authenticated axios instance
@@ -162,6 +172,39 @@ export async function getTokenTopPnlTraders(
     }
     const { data } = await http.get<VybeTokenTopPnlTradersResponse>(
       `/v4/tokens/${encodeURIComponent(mintAddress)}/top-pnl-traders`,
+      { params }
+    );
+    return data;
+  });
+}
+
+export async function getWalletPnl(
+  http: AxiosInstance,
+  ownerAddress: string,
+  options: GetWalletPnlOptions = {}
+): Promise<VybeWalletPnlResponse> {
+  const {
+    resolution = '1d',
+    mintAddress,
+    sortByAsc,
+    sortByDesc = 'realizedPnlUsd',
+    limit = 1000,
+    page = 0,
+  } = options;
+  return withRetry(async () => {
+    const params: Record<string, string | number> = {
+      resolution,
+      limit,
+      page,
+    };
+    if (mintAddress) params.mintAddress = mintAddress;
+    if (sortByAsc) {
+      params.sortByAsc = sortByAsc;
+    } else {
+      params.sortByDesc = sortByDesc;
+    }
+    const { data } = await http.get<VybeWalletPnlResponse>(
+      `/v4/wallets/${encodeURIComponent(ownerAddress)}/pnl`,
       { params }
     );
     return data;

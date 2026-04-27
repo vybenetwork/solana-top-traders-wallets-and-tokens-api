@@ -1106,6 +1106,46 @@ button:active {
   text-decoration: none;
 }
 
+.wallet-top-traders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.wallet-top-trader-card .token-stats {
+  gap: 0.45rem 1rem;
+}
+
+.wallet-top-trader-card .token-stats dt {
+  white-space: nowrap;
+}
+
+.wallet-top-trader-card .token-stats dd {
+  word-break: break-word;
+}
+
+.wallet-pnl-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.wallet-pnl-token-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.wallet-pnl-token-card .token-stats {
+  gap: 0.4rem 1rem;
+}
+
+.wallet-pnl-empty {
+  color: #a1a1aa;
+  font-size: 0.9rem;
+}
+
 .trades-summary-markets {
   min-width: 0;
 }
