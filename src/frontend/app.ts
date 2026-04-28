@@ -73,6 +73,8 @@ interface WalletPnlSideMetrics {
   transactionCount?: number;
   volumeUsd?: number;
   tokenAmount?: number;
+  latestTradeBlocktime?: number;
+  latestTradeSignature?: string;
 }
 
 interface WalletPnlTokenMetric {
@@ -80,9 +82,11 @@ interface WalletPnlTokenMetric {
   tokenName?: string;
   tokenSymbol?: string;
   tokenLogoUrl?: string;
+  tokenLabels?: string[];
   status?: string;
   realizedPnlUsd?: number;
   unrealizedPnlUsd?: number;
+  latestTradeBlocktime?: number;
   buys?: WalletPnlSideMetrics;
   sells?: WalletPnlSideMetrics;
 }
@@ -405,6 +409,58 @@ function renderLogoImage(url: string | undefined, alt: string): string {
   return `<img src="${src}" alt="${alt}" class="wallet-logo-avatar" loading="lazy" onerror="this.onerror=null;this.src='${FALLBACK_LOGO_URL}'" />`;
 }
 
+function formatBlocktime(blocktime: number | null | undefined): string {
+  const num = Number(blocktime);
+  if (!Number.isFinite(num) || num <= 0) return '—';
+  return new Date(num * 1000).toLocaleString(undefined, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+}
+
+function renderSignaturePopupLink(signature: string | null | undefined): string {
+  const sig = (signature || '').trim();
+  if (!sig) return '—';
+  const href = `https://solscan.io/tx/${encodeURIComponent(sig)}`;
+  const short = truncateAddress(sig);
+  return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="wallet-tx-link" title="${sig}" onclick="window.open(this.href,'solscanTx','popup=yes,width=1100,height=780,noopener,noreferrer'); return false;">Open TX</a><div class="mono wallet-tx-sig" title="${sig}">${short}</div>`;
+}
+
+function renderLatestTradeCell(blocktime: number | null | undefined, signature: string | null | undefined): string {
+  return `<div class="wallet-tx-datetime">${formatBlocktime(blocktime)}</div>${renderSignaturePopupLink(signature)}`;
+}
+
+function renderAmountVolumeCell(
+  amount: number | string | null | undefined,
+  volumeUsd: number | string | null | undefined
+): string {
+  const amountText = formatNum(amount);
+  const usdText = formatUsdFull(Number(volumeUsd));
+  return `<div class="wallet-amt-vol-cell">
+    <span>${amountText}</span>
+    <span class="wallet-amt-vol-usd">${usdText}</span>
+  </div>`;
+}
+
+function formatRemainingAmountCell(
+  buyAmount: number | string | null | undefined,
+  sellAmount: number | string | null | undefined
+): string {
+  const buy = Number(buyAmount);
+  const sell = Number(sellAmount);
+  const remaining = (Number.isFinite(buy) ? buy : 0) - (Number.isFinite(sell) ? sell : 0);
+  const text = formatNum(remaining);
+  if (text === '—') return text;
+  if (remaining === 0) {
+    return `<span class="usd-tone usd-tone--neutral">${text}</span>`;
+  }
+  return text;
+}
+
 function applyTokenTopPnl24hColumnVisibility(): void {
   const resolution = tokenTopPnlResolution.value.trim().toLowerCase();
   const is24hResolution = resolution === '1d' || resolution === '24h' || resolution === '24hr';
@@ -676,6 +732,32 @@ function renderWalletPnl(
       </dl>
     </section>`;
 
+  const trendRows = mergedSummary.pnlTrendSevenDays ?? [];
+  const pnlTrendHtml = trendRows.length
+    ? `<section class="token-stats-group">
+      <h3 class="token-stats-group-title"><span>7d PnL trend points</span></h3>
+      <div class="table-wrap">
+        <table class="wallet-trend-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th style="text-align:right">PnL</th>
+            </tr>
+          </thead>
+          <tbody>${trendRows.map((point) => {
+      const ts = Number(point?.[0]);
+      const pnl = Number(point?.[1]);
+      const timeLabel = Number.isFinite(ts) ? new Date(ts).toLocaleString() : '—';
+      return `<tr>
+              <td>${timeLabel}</td>
+              <td style="text-align:right">${formatUsdCell(Number.isFinite(pnl) ? pnl : undefined)}</td>
+            </tr>`;
+    }).join('')}</tbody>
+        </table>
+      </div>
+    </section>`
+    : `<section class="token-stats-group wallet-pnl-empty">No 7-day trend points returned for this wallet.</section>`;
+
   const assetsTableHtml = tokenMetrics.length
     ? `<section class="token-stats-group">
       <h3 class="token-stats-group-title"><span>Assets</span></h3>
@@ -685,13 +767,18 @@ function renderWalletPnl(
             <tr>
               <th>Icon</th>
               <th>Asset</th>
+              <th class="wallet-asset-labels-col">Labels</th>
               <th>Status</th>
-              <th style="text-align:right">Realized PnL</th>
-              <th style="text-align:right">Unrealized PnL</th>
+              <th style="text-align:right">Real. PnL</th>
+              <th style="text-align:right">Unreal. PnL</th>
               <th style="text-align:right">Buys (tx)</th>
               <th style="text-align:right">Sells (tx)</th>
-              <th style="text-align:right">Buy volume</th>
-              <th style="text-align:right">Sell volume</th>
+              <th style="text-align:right">Buy amt / vol</th>
+              <th style="text-align:right">Sell amt / vol</th>
+              <th style="text-align:right">Remaining amnt</th>
+              <th>Latest TX</th>
+              <th class="wallet-asset-tx-col">Buy TX</th>
+              <th class="wallet-asset-tx-col">Sell TX</th>
             </tr>
           </thead>
           <tbody>${tokenMetrics.map((metric) => {
@@ -704,16 +791,22 @@ function renderWalletPnl(
       const assetCell = mint
         ? `${tokenLink}<div class="wallet-asset-mint mono">${truncateAddress(mint)}</div>`
         : tokenLink;
+      const labels = (metric.tokenLabels ?? []).filter((label) => (label || '').trim() !== '');
       return `<tr>
         <td class="wallet-asset-icon-cell">${iconCell}</td>
         <td>${assetCell}</td>
+        <td class="wallet-asset-labels-cell">${labels.length ? labels.join(', ') : '—'}</td>
         <td>${metric.status ?? '—'}</td>
         <td style="text-align:right">${formatUsdCell(metric.realizedPnlUsd)}</td>
         <td style="text-align:right">${formatUsdCell(metric.unrealizedPnlUsd)}</td>
         <td style="text-align:right">${formatTradesCountHeatCell(metric.buys?.transactionCount, buysTxMin, buysTxMax)}</td>
         <td style="text-align:right">${formatTradesCountHeatCell(metric.sells?.transactionCount, sellsTxMin, sellsTxMax)}</td>
-        <td style="text-align:right">${formatUsdCell(metric.buys?.volumeUsd)}</td>
-        <td style="text-align:right">${formatUsdCell(metric.sells?.volumeUsd)}</td>
+        <td style="text-align:right">${renderAmountVolumeCell(metric.buys?.tokenAmount, metric.buys?.volumeUsd)}</td>
+        <td style="text-align:right">${renderAmountVolumeCell(metric.sells?.tokenAmount, metric.sells?.volumeUsd)}</td>
+        <td style="text-align:right">${formatRemainingAmountCell(metric.buys?.tokenAmount, metric.sells?.tokenAmount)}</td>
+        <td>${formatBlocktime(metric.latestTradeBlocktime)}</td>
+        <td class="wallet-asset-tx-cell">${renderLatestTradeCell(metric.buys?.latestTradeBlocktime, metric.buys?.latestTradeSignature)}</td>
+        <td class="wallet-asset-tx-cell">${renderLatestTradeCell(metric.sells?.latestTradeBlocktime, metric.sells?.latestTradeSignature)}</td>
       </tr>`;
     }).join('')}</tbody>
         </table>
@@ -721,7 +814,7 @@ function renderWalletPnl(
     </section>`
     : '<div class="token-stats-group wallet-pnl-empty">No token metrics returned for this wallet and filter.</div>';
 
-  walletPnlDetails.innerHTML = `<div class="wallet-pnl-sections">${walletProfileHtml}${performanceHtml}${tradingStatsHtml}${tokenHighlightsHtml}</div>${assetsTableHtml}`;
+  walletPnlDetails.innerHTML = `<div class="wallet-pnl-sections">${walletProfileHtml}${performanceHtml}${tradingStatsHtml}${tokenHighlightsHtml}${pnlTrendHtml}</div>${assetsTableHtml}`;
 }
 
 function buildTokenTopPnlParams(): URLSearchParams {

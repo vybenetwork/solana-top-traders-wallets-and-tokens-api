@@ -1180,6 +1180,10 @@ button:active {
   background: #18181b;
 }
 
+.wallet-assets-table {
+  min-width: 1450px;
+}
+
 .wallet-asset-icon-cell {
   width: 44px;
   min-width: 44px;
@@ -1189,6 +1193,62 @@ button:active {
   color: #a1a1aa;
   font-size: 0.75rem;
   margin-top: 0.2rem;
+}
+
+.wallet-asset-labels-col,
+.wallet-asset-labels-cell {
+  width: 56px;
+  min-width: 56px;
+  max-width: 56px;
+}
+
+.wallet-asset-labels-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wallet-asset-tx-col,
+.wallet-asset-tx-cell {
+  min-width: 88px;
+}
+
+.wallet-tx-datetime {
+  font-size: 0.36rem;
+  color: #d4d4d8;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.wallet-tx-link {
+  color: #60a5fa;
+  font-size: 0.52rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.wallet-tx-link:hover {
+  text-decoration: underline;
+}
+
+.wallet-tx-sig {
+  color: #a1a1aa;
+  font-size: 0.36rem;
+  white-space: nowrap;
+}
+
+.wallet-amt-vol-cell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.05rem;
+}
+
+.wallet-amt-vol-usd {
+  color: #86efac;
 }
 
 .trades-summary-markets {
