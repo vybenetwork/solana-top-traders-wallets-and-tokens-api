@@ -1131,6 +1131,12 @@ button:active {
   margin-top: 1rem;
 }
 
+.wallet-pnl-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
 .wallet-pnl-token-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -1144,6 +1150,45 @@ button:active {
 .wallet-pnl-empty {
   color: #a1a1aa;
   font-size: 0.9rem;
+}
+
+.wallet-logo-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  object-fit: cover;
+  display: inline-block;
+  border: 1px solid #3f3f46;
+  vertical-align: middle;
+}
+
+.wallet-token-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.wallet-assets-table-wrap {
+  max-height: 28rem;
+  overflow-y: auto;
+}
+
+.wallet-assets-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #18181b;
+}
+
+.wallet-asset-icon-cell {
+  width: 44px;
+  min-width: 44px;
+}
+
+.wallet-asset-mint {
+  color: #a1a1aa;
+  font-size: 0.75rem;
+  margin-top: 0.2rem;
 }
 
 .trades-summary-markets {

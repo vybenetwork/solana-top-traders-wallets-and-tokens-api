@@ -58,8 +58,8 @@
             <span class="field-icon icon-grid" aria-hidden="true"></span>
             <select id="walletResolution">
               <option value="1d">1d</option>
-              <option value="7d">7d</option>
-              <option value="30d" selected>30d</option>
+              <option value="7d" selected>7d</option>
+              <option value="30d">30d</option>
             </select>
           </div>
         </div>
@@ -347,7 +347,7 @@
 
     <section class="top-traders-section panel" id="topTradersSection">
       <div class="section-header">
-        <h2>Top traders (by realized PnL, 30d)</h2>
+        <h2 id="walletTopTradersTitle">Top traders (by realized PnL, 30d)</h2>
         <div class="section-loading" id="topTradersLoading" hidden aria-hidden="true">
           <span class="loading-spinner"></span>
           <span class="loading-text">Loading…</span>
@@ -419,6 +419,6 @@
       <pre id="errorText"></pre>
     </section>
   </div>
-  <script src="app.js?v=10"></script>
+  <script src="app.js?v=11"></script>
 </body>
 </html>
