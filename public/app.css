@@ -1658,6 +1658,14 @@ button:active {
   word-break: break-word;
 }
 
+.wallet-pnl-metric-chip-value .wallet-pnl-trade-chip-count {
+  font-weight: 600;
+}
+
+.wallet-pnl-metric-chip-value .wallet-pnl-trade-chip-avg {
+  font-weight: 400;
+}
+
 .wallet-pnl-metric-chip--pos {
   border-color: rgba(52, 211, 153, 0.28);
   background: linear-gradient(165deg, rgba(16, 185, 129, 0.08), rgba(0, 0, 0, 0.2));

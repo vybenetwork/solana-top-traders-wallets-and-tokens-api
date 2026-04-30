@@ -410,13 +410,20 @@ function avgGainMultFromTableByGainGroups(metrics: WalletPnlTokenMetric[]): {
   };
 }
 
-function formatWinLoseTradesCountWithAvg(
+function formatWinLoseTradesChipValueHtml(
   count: number | null | undefined,
-  avgMult: number | null
+  avgMult: number | null,
+  tone: 'pos' | 'neg'
 ): string {
   const countStr = formatIntFull(count);
-  if (avgMult == null || !Number.isFinite(avgMult)) return countStr;
-  return `${countStr} (${formatGainMultiplierLabel(avgMult)} Avg)`;
+  const posNegClass = tone === 'pos' ? 'usd-tone usd-tone--positive' : 'usd-tone usd-tone--negative';
+  if (countStr === '—') {
+    return `<span class="usd-tone usd-tone--neutral">${countStr}</span>`;
+  }
+  if (avgMult == null || !Number.isFinite(avgMult)) {
+    return `<span class="${posNegClass}"><span class="wallet-pnl-trade-chip-count">${countStr}</span></span>`;
+  }
+  return `<span class="${posNegClass}"><span class="wallet-pnl-trade-chip-count">${countStr}</span><span class="wallet-pnl-trade-chip-avg"> (${formatGainMultiplierLabel(avgMult)} Avg)</span></span>`;
 }
 
 const GAIN_ONE_X_EPS = 0.0005;
@@ -715,11 +722,13 @@ function renderWalletPieCard(title: string, slices: WalletPieSlice[]): string {
   const total = normalized.reduce((sum, slice) => sum + slice.value, 0);
   if (total <= 0) {
     const dash = '—';
-    const isWinLose = title.toLowerCase().includes('winning') || title.toLowerCase().includes('losing');
+    const t = title.toLowerCase();
+    const isWinLose = t.includes('winning') || t.includes('losing');
+    const isOpenClosed = t.includes('opened') && t.includes('closed');
     const neutralRing = '#27272a';
     const neutralSwatch = '#52525b';
     const emptyBg = buildPieGradientWithGaps([1], [neutralRing]);
-    const legendRows = isWinLose ? 2 : 3;
+    const legendRows = isWinLose || isOpenClosed ? 2 : 3;
     const legendHtml = Array.from({ length: legendRows }, () => {
       return `<div class="wallet-pnl-pie-legend-item">
         <span class="wallet-pnl-pie-legend-swatch" style="background:${neutralSwatch}"></span>
@@ -886,8 +895,8 @@ function buildWalletPnlPlaceholder(): string {
             </div>
           </div>
           <div class="wallet-pnl-metric-row">
-            <div class="wallet-pnl-metric-chip"><span class="wallet-pnl-metric-chip-label">Winning Trades</span><span class="wallet-pnl-metric-chip-value">${formatIntFull(undefined)}</span></div>
-            <div class="wallet-pnl-metric-chip"><span class="wallet-pnl-metric-chip-label">Losing Trades</span><span class="wallet-pnl-metric-chip-value">${formatIntFull(undefined)}</span></div>
+            <div class="wallet-pnl-metric-chip wallet-pnl-metric-chip--pos"><span class="wallet-pnl-metric-chip-label">Winning Trades</span><span class="wallet-pnl-metric-chip-value">${formatWinLoseTradesChipValueHtml(undefined, null, 'pos')}</span></div>
+            <div class="wallet-pnl-metric-chip wallet-pnl-metric-chip--neg"><span class="wallet-pnl-metric-chip-label">Losing Trades</span><span class="wallet-pnl-metric-chip-value">${formatWinLoseTradesChipValueHtml(undefined, null, 'neg')}</span></div>
           </div>
           <div class="wallet-pnl-metric-row">
             <div class="wallet-pnl-metric-chip"><span class="wallet-pnl-metric-chip-label">Unique Tokens</span><span class="wallet-pnl-metric-chip-value">${formatIntFull(undefined)}</span></div>
@@ -1309,8 +1318,8 @@ function renderWalletPnl(
           </div>
         </div>
         <div class="wallet-pnl-metric-row">
-          <div class="wallet-pnl-metric-chip wallet-pnl-metric-chip--pos"><span class="wallet-pnl-metric-chip-label">Winning Trades</span><span class="wallet-pnl-metric-chip-value">${formatWinLoseTradesCountWithAvg(mergedSummary.winningTradesCount, winAvgGainMult)}</span></div>
-          <div class="wallet-pnl-metric-chip wallet-pnl-metric-chip--neg"><span class="wallet-pnl-metric-chip-label">Losing Trades</span><span class="wallet-pnl-metric-chip-value">${formatWinLoseTradesCountWithAvg(mergedSummary.losingTradesCount, loseAvgGainMult)}</span></div>
+          <div class="wallet-pnl-metric-chip wallet-pnl-metric-chip--pos"><span class="wallet-pnl-metric-chip-label">Winning Trades</span><span class="wallet-pnl-metric-chip-value">${formatWinLoseTradesChipValueHtml(mergedSummary.winningTradesCount, winAvgGainMult, 'pos')}</span></div>
+          <div class="wallet-pnl-metric-chip wallet-pnl-metric-chip--neg"><span class="wallet-pnl-metric-chip-label">Losing Trades</span><span class="wallet-pnl-metric-chip-value">${formatWinLoseTradesChipValueHtml(mergedSummary.losingTradesCount, loseAvgGainMult, 'neg')}</span></div>
         </div>
         <div class="wallet-pnl-metric-row">
           <div class="wallet-pnl-metric-chip"><span class="wallet-pnl-metric-chip-label">Unique Tokens</span><span class="wallet-pnl-metric-chip-value">${formatIntFull(mergedSummary.uniqueTokensTraded)}</span></div>
@@ -1346,8 +1355,8 @@ function renderWalletPnl(
     const win = Math.max(0, Math.round(Number(mergedSummary.winningTradesCount) || 0));
     const lose = Math.max(0, Math.round(Number(mergedSummary.losingTradesCount) || 0));
     return [
-      { label: 'Winning Trades', value: win, color: '#3b82f6', avgGainMult: winAvgGainMult },
-      { label: 'Losing Trades', value: lose, color: '#64748b', avgGainMult: loseAvgGainMult },
+      { label: 'Winning', value: win, color: '#4ade80', avgGainMult: winAvgGainMult },
+      { label: 'Losing', value: lose, color: '#64748b', avgGainMult: loseAvgGainMult },
     ];
   })();
 
