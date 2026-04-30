@@ -1320,14 +1320,22 @@ function getTraderPnl(row: TokenTopPnlTraderRow): number {
 }
 
 function formatUsdBucketValue(value: number): string {
+  if (!Number.isFinite(value)) return '$0';
+  const sign = value < 0 ? '-' : '';
   const abs = Math.abs(value);
   if (abs === 0) return '$0';
-  const core = abs < 1
-    ? abs.toFixed(2)
-    : Number.isInteger(abs)
+  if (abs >= 0.01 && abs < 1) {
+    return `${sign}$${abs.toFixed(2)}`;
+  }
+  if (abs >= 1) {
+    const core = Number.isInteger(abs)
       ? abs.toLocaleString()
       : abs.toFixed(2).replace(/\.?0+$/, '');
-  return `${value < 0 ? '-' : ''}$${core}`;
+    return `${sign}$${core}`;
+  }
+  const fixed = abs.toFixed(6).replace(/\.?0+$/, '');
+  const core = fixed.length > 0 && Number(fixed) > 0 ? fixed : abs.toExponential(2);
+  return `${sign}$${core}`;
 }
 
 type PnlDistributionGroup = {
@@ -1337,6 +1345,10 @@ type PnlDistributionGroup = {
   lower?: number;
   upper?: number;
 };
+
+function isZeroPnlGroup(group: PnlDistributionGroup): boolean {
+  return group.tone === 'neutral' && group.label === '0';
+}
 
 function formatPnlRangeLabel(tone: 'positive' | 'negative', lower: number, upper: number): string {
   if (tone === 'positive') {
@@ -1353,6 +1365,7 @@ function expandPnlGroupsToTarget(groups: PnlDistributionGroup[], values: number[
   if (groups.length >= targetCount) return groups;
   const expanded = [...groups];
   const safeTarget = Math.max(groups.length, targetCount);
+  const splitStepPriority = [0.05, 0.03, 0.02, 0.01];
 
   const countValuesInRange = (tone: 'positive' | 'negative', lower: number, upper: number): number => {
     if (tone === 'positive') {
@@ -1361,8 +1374,85 @@ function expandPnlGroupsToTarget(groups: PnlDistributionGroup[], values: number[
     return values.filter((v) => v >= lower && v < upper).length;
   };
 
-  while (expanded.length < safeTarget) {
-    const splittable = expanded
+  /** Reject splits like 72+2 so we subdivide heavy buckets instead of carving off singletons. */
+  const minSmallerChildForSplit = (parentCount: number): number => {
+    if (parentCount <= 8) return 1;
+    if (parentCount >= 80) return 2;
+    return 1;
+  };
+
+  const snapToStep = (value: number, step: number): number => {
+    if (!Number.isFinite(value)) return value;
+    const snapped = Math.round(value / step) * step;
+    return Number(snapped.toFixed(6));
+  };
+
+  /** Try (lower, split] / (split, upper] for positives, or [lower,split) / [split,upper) for negatives. */
+  const trySplitBucket = (
+    tone: 'positive' | 'negative',
+    lower: number,
+    upper: number,
+    split: number,
+    parentCount: number,
+    minStep: number
+  ): PnlDistributionGroup[] | null => {
+    if (!Number.isFinite(split) || split <= lower || split >= upper) return null;
+    const span = upper - lower;
+    const snappedSplit = snapToStep(split, minStep);
+    if (!Number.isFinite(snappedSplit) || snappedSplit <= lower || snappedSplit >= upper) return null;
+    if ((snappedSplit - lower) < minStep || (upper - snappedSplit) < minStep) return null;
+    const minGap = Math.max(1e-12, Math.abs(span) * 1e-5);
+    if (snappedSplit - lower < minGap || upper - snappedSplit < minGap) return null;
+    const lowCount = countValuesInRange(tone, lower, snappedSplit);
+    const highCount = countValuesInRange(tone, snappedSplit, upper);
+    if (lowCount <= 0 || highCount <= 0) return null;
+    const minChild = minSmallerChildForSplit(parentCount);
+    if (Math.min(lowCount, highCount) < minChild) return null;
+    if (tone === 'positive') {
+      const hi: PnlDistributionGroup = {
+        label: formatPnlRangeLabel('positive', snappedSplit, upper),
+        count: highCount,
+        tone: 'positive',
+        lower: snappedSplit,
+        upper,
+      };
+      const lo: PnlDistributionGroup = {
+        label: formatPnlRangeLabel('positive', lower, snappedSplit),
+        count: lowCount,
+        tone: 'positive',
+        lower,
+        upper: snappedSplit,
+      };
+      if (hi.label === lo.label) return null;
+      return [hi, lo];
+    }
+    const hi: PnlDistributionGroup = {
+      label: formatPnlRangeLabel('negative', snappedSplit, upper),
+      count: highCount,
+      tone: 'negative',
+      lower: snappedSplit,
+      upper,
+    };
+    const lo: PnlDistributionGroup = {
+      label: formatPnlRangeLabel('negative', lower, snappedSplit),
+      count: lowCount,
+      tone: 'negative',
+      lower,
+      upper: snappedSplit,
+    };
+    if (hi.label === lo.label) return null;
+    return [hi, lo];
+  };
+
+  const splitFractions = [0.5, 0.33, 0.67, 0.25, 0.75];
+  let guard = 0;
+  const maxIters = 64;
+  /** When zero dominates, split buckets this large before touching tiny ones (2nd/3rd rows stay ~60–70). */
+  const heavyCountFloor = 8;
+
+  while (expanded.length < safeTarget && guard < maxIters) {
+    guard += 1;
+    const splittableMeta = expanded
       .map((group, index) => ({ group, index }))
       .filter(({ group }) => (
         group.tone !== 'neutral'
@@ -1370,60 +1460,93 @@ function expandPnlGroupsToTarget(groups: PnlDistributionGroup[], values: number[
         && Number.isFinite(group.lower)
         && Number.isFinite(group.upper)
         && Math.abs(Number(group.upper) - Number(group.lower)) > Number.EPSILON
-      ))
-      .sort((a, b) => b.group.count - a.group.count);
+      ));
 
-    if (splittable.length === 0) break;
-    const primary = splittable[0];
-    const secondary = splittable[1];
-    const candidates = [primary, secondary].filter((item): item is { group: PnlDistributionGroup; index: number } => Boolean(item));
+    if (splittableMeta.length === 0) break;
+
+    const splittableIndexSet = new Set(splittableMeta.map((s) => s.index));
+
+    const rankedByCount = expanded
+      .map((group, index) => ({ group, index }))
+      .sort((a, b) => b.group.count - a.group.count || a.index - b.index);
+
+    const zeroDominates = rankedByCount.length > 0 && isZeroPnlGroup(rankedByCount[0].group);
+
+    const rankedNonZeroSplittable = rankedByCount.filter(
+      ({ group, index }) => !isZeroPnlGroup(group) && splittableIndexSet.has(index)
+    );
+
+    let splitQueue = rankedNonZeroSplittable;
+    if (zeroDominates) {
+      const heavy = rankedNonZeroSplittable.filter(({ group }) => group.count >= heavyCountFloor);
+      const light = rankedNonZeroSplittable.filter(({ group }) => group.count < heavyCountFloor);
+      splitQueue = heavy.length > 0 ? [...heavy, ...light] : rankedNonZeroSplittable;
+    }
 
     let didSplit = false;
-    for (const candidate of candidates) {
+    for (const candidate of splitQueue) {
       const source = candidate.group;
       const lower = Number(source.lower);
       const upper = Number(source.upper);
-      const mid = (lower + upper) / 2;
-      if (!Number.isFinite(mid) || mid <= lower || mid >= upper) continue;
-
       const tone = source.tone as 'positive' | 'negative';
-      const lowCount = countValuesInRange(tone, lower, mid);
-      const highCount = countValuesInRange(tone, mid, upper);
-      if (lowCount <= 0 || highCount <= 0) continue;
+      const parentCount = source.count;
 
-      const replacement: PnlDistributionGroup[] = tone === 'positive'
-        ? [
-          {
-            label: formatPnlRangeLabel('positive', mid, upper),
-            count: highCount,
-            tone: 'positive',
-            lower: mid,
-            upper,
-          },
-          {
-            label: formatPnlRangeLabel('positive', lower, mid),
-            count: lowCount,
-            tone: 'positive',
-            lower,
-            upper: mid,
-          },
-        ]
-        : [
-          {
-            label: formatPnlRangeLabel('negative', mid, upper),
-            count: highCount,
-            tone: 'negative',
-            lower: mid,
-            upper,
-          },
-          {
-            label: formatPnlRangeLabel('negative', lower, mid),
-            count: lowCount,
-            tone: 'negative',
-            lower,
-            upper: mid,
-          },
-        ];
+      let replacement: PnlDistributionGroup[] | null = null;
+      for (const minStep of splitStepPriority) {
+        // Evaluate all valid boundaries for this step, choose the most balanced split.
+        let bestSplit: number | null = null;
+        let bestBalance = -1;
+        const firstBoundary = snapToStep(lower + minStep, minStep);
+        const lastBoundary = snapToStep(upper - minStep, minStep);
+        for (let split = firstBoundary; split <= lastBoundary + 1e-9; split = Number((split + minStep).toFixed(6))) {
+          const lowCount = countValuesInRange(tone, lower, split);
+          const highCount = countValuesInRange(tone, split, upper);
+          const minChild = minSmallerChildForSplit(parentCount);
+          const balance = Math.min(lowCount, highCount);
+          if (balance < minChild) continue;
+          const tentative = trySplitBucket(tone, lower, upper, split, parentCount, minStep);
+          if (!tentative) continue;
+          if (balance > bestBalance) {
+            bestBalance = balance;
+            bestSplit = split;
+          }
+        }
+        if (bestSplit != null) {
+          replacement = trySplitBucket(tone, lower, upper, bestSplit, parentCount, minStep);
+          if (replacement) break;
+        }
+      }
+
+      // Fallback: geometric split attempts if no grid boundary worked.
+      if (!replacement) {
+        const span = upper - lower;
+        for (const minStep of splitStepPriority) {
+          for (const frac of splitFractions) {
+            const split = lower + span * frac;
+            replacement = trySplitBucket(tone, lower, upper, split, parentCount, minStep);
+            if (replacement) break;
+          }
+          if (replacement) break;
+        }
+      }
+
+      if (!replacement && parentCount >= heavyCountFloor) {
+        const inRange =
+          tone === 'positive'
+            ? values.filter((v) => v > lower && v <= upper).sort((a, b) => a - b)
+            : values.filter((v) => v >= lower && v < upper).sort((a, b) => a - b);
+        if (inRange.length >= 2) {
+          const mid = Math.floor(inRange.length / 2);
+          const split = (inRange[mid - 1] + inRange[mid]) / 2;
+          for (const minStep of splitStepPriority) {
+            replacement = trySplitBucket(tone, lower, upper, split, parentCount, minStep);
+            if (replacement) break;
+          }
+        }
+      }
+
+      if (!replacement) continue;
+
       expanded.splice(candidate.index, 1, ...replacement);
       didSplit = true;
       break;
