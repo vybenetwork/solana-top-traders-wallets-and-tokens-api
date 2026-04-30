@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Solana Top Traders Wallets & Tokens</title>
-  <link rel="stylesheet" href="app.css?v=45" />
+  <link rel="stylesheet" href="app.css?v=42" />
 </head>
 <body>
   <div class="container">
@@ -279,11 +279,13 @@
       <div class="section-header token-supply-period-header">
         <h2 class="token-supply-period-title">24 Hours</h2>
       </div>
+      <p class="meta token-supply-period-desc">Rolling 24-hour snapshot: how top-trader USD volume splits across cohorts, and how many traders sit in each realized PnL band.</p>
       <div class="token-supply-grid">
         <div class="token-supply-card">
           <div class="section-header">
             <h2>Top vs. Non-Top Traders (Last 24Hr)</h2>
           </div>
+          <p class="meta token-supply-card-desc">Donut compares top 10, 11–100, 101–limit, and non-top trader volume against this token’s 24h USD volume and the cohort total.</p>
           <div class="token-supply-wrap">
             <div class="token-supply-pie" id="tokenSupplyPie" aria-label="Top trader volume distribution pie chart"></div>
             <div class="token-supply-legend" id="tokenSupplyLegend"></div>
@@ -294,6 +296,7 @@
           <div class="section-header token-supply-subheader">
             <h2>PnL distribution (Last 24Hr)</h2>
           </div>
+          <p class="meta token-supply-card-desc">Each bar is the count of traders in that realized PnL range for the same 24-hour top-traders response.</p>
           <div class="token-pnl-bars" id="tokenPnlBars24h" aria-label="PnL distribution groups for 24h fetch">
           </div>
         </div>
@@ -304,11 +307,13 @@
       <div class="section-header token-supply-period-header">
         <h2 class="token-supply-period-title" id="tokenSupplySelectedTitle">30 Days</h2>
       </div>
+      <p class="meta token-supply-period-desc">Cohort volume split, PnL buckets, and (for 7d/30d) trades-count bands—all recomputed for the resolution you select below.</p>
       <div class="token-supply-grid">
         <div class="token-supply-card">
           <div class="section-header">
             <h2 id="tokenTopVolumeSelectedTitle">Top Traders Volume (Last 30 Days)</h2>
           </div>
+          <p class="meta token-supply-card-desc">Donut shows each cohort’s share of total top‑N trader USD volume for the selected window (101+ appears when limit ≥ 250).</p>
           <div class="token-supply-wrap">
             <div class="token-supply-pie" id="tokenSupplyPieTotal" aria-label="Top trader total volume split pie chart"></div>
             <div class="token-supply-legend" id="tokenSupplyLegendTotal"></div>
@@ -319,6 +324,7 @@
           <div class="section-header token-supply-subheader">
             <h2 id="tokenPnlSelectedTitle">PnL distribution (30 days resolution)</h2>
           </div>
+          <p class="meta token-supply-card-desc">Same PnL bucketing as the 24h chart, but counts traders over your selected resolution (label updates when you change the window).</p>
           <div class="token-pnl-bars" id="tokenPnlBarsTotal" aria-label="PnL distribution groups for selected resolution fetch">
           </div>
         </div>
@@ -327,6 +333,7 @@
           <div class="section-header token-supply-subheader">
             <h2 id="tokenTradesCountSelectedTitle">Trades count distribution (Last 30 Days)</h2>
           </div>
+          <p class="meta token-supply-card-desc">Shown for 7d and 30d: each column is a trades-executed band; bar height is how many traders in the top-N set fall in that band.</p>
           <div class="token-trades-vertical-bars" id="tokenTradesCountBarsVertical" aria-label="Trades count distribution groups for selected resolution fetch">
           </div>
         </div>
@@ -382,25 +389,22 @@
       </div>
       <div class="top-traders-content">
         <p class="meta" id="tokenTopPnlMeta">—</p>
-        <div class="token-stats-group token-top-pnl-table-card">
-          <h3 class="token-stats-group-title"><span>Top PnL traders</span></h3>
-          <div class="table-wrap">
-            <table id="tokenTopPnlTable">
-              <thead>
-                <tr>
-                  <th style="text-align: left">#</th>
-                  <th style="text-align: left">Trader</th>
-                  <th id="tokenTopPnlRealizedHeader" style="text-align: right">Realized PnL (30d)</th>
-                  <th id="tokenTopPnlUnrealizedHeader" style="text-align: right">Unrealized PnL (30d)</th>
-                  <th id="tokenTopPnlVolumeHeader" style="text-align: right">Volume (30d)</th>
-                  <th id="tokenTopPnl24hVolumeHeader" style="text-align: right">Volume (24h)</th>
-                  <th id="tokenTopPnlTradesHeader" style="text-align: right">Trades (30d)</th>
-                  <th id="tokenTopPnl24hTradesHeader" style="text-align: right">Trades (24h)</th>
-                </tr>
-              </thead>
-              <tbody id="tokenTopPnlBody"></tbody>
-            </table>
-          </div>
+        <div class="table-wrap">
+          <table id="tokenTopPnlTable">
+            <thead>
+              <tr>
+                <th style="text-align: left">#</th>
+                <th style="text-align: left">Trader</th>
+                <th id="tokenTopPnlRealizedHeader" style="text-align: right">Realized PnL (30d)</th>
+                <th id="tokenTopPnlUnrealizedHeader" style="text-align: right">Unrealized PnL (30d)</th>
+                <th id="tokenTopPnlVolumeHeader" style="text-align: right">Volume (30d)</th>
+                <th id="tokenTopPnl24hVolumeHeader" style="text-align: right">Volume (24h)</th>
+                <th id="tokenTopPnlTradesHeader" style="text-align: right">Trades (30d)</th>
+                <th id="tokenTopPnl24hTradesHeader" style="text-align: right">Trades (24h)</th>
+              </tr>
+            </thead>
+            <tbody id="tokenTopPnlBody"></tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -410,6 +414,6 @@
       <pre id="errorText"></pre>
     </section>
   </div>
-  <script src="app.js?v=52"></script>
+  <script src="app.js?v=48"></script>
 </body>
 </html>
