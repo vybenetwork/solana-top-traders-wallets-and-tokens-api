@@ -393,11 +393,11 @@ function formatGainMultiplierLabel(ratio: number): string {
 const GAIN_ONE_X_EPS = 0.0005;
 /** Light end of the >1× range (weakest gain still above 1). */
 const GAIN_GREEN_LIGHT = '#86efac';
-/** Darkest green for the best (highest) gain in the response. */
-const GAIN_GREEN_DARK = '#14532d';
+/** Saturated green for the best (highest) gain in the response. */
+const GAIN_GREEN_NORMAL = '#22c55e';
 const GAIN_YELLOW = '#eab308';
-/** Darkest red for the worst (lowest) gain below 1. */
-const GAIN_RED_DARK = '#7f1d1d';
+/** Saturated red for the worst (lowest) gain below 1. */
+const GAIN_RED_NORMAL = '#ef4444';
 /** Light red closest to 1× among losers. */
 const GAIN_RED_LIGHT = '#f87171';
 
@@ -446,17 +446,17 @@ function gainMultiplierDisplayColor(ratio: number, b: WalletGainColorBounds): st
     return GAIN_YELLOW;
   }
   if (ratio > 1) {
-    if (b.minAbove1 == null || b.maxAbove1 == null) return GAIN_GREEN_DARK;
+    if (b.minAbove1 == null || b.maxAbove1 == null) return GAIN_GREEN_NORMAL;
     const span = b.maxAbove1 - b.minAbove1;
-    if (span <= 1e-9) return GAIN_GREEN_DARK;
+    if (span <= 1e-9) return GAIN_GREEN_NORMAL;
     const t = (ratio - b.minAbove1) / span;
-    return lerpHex(GAIN_GREEN_LIGHT, GAIN_GREEN_DARK, t);
+    return lerpHex(GAIN_GREEN_LIGHT, GAIN_GREEN_NORMAL, t);
   }
-  if (b.minBelow1 == null || b.maxBelow1 == null) return GAIN_RED_DARK;
+  if (b.minBelow1 == null || b.maxBelow1 == null) return GAIN_RED_NORMAL;
   const span = b.maxBelow1 - b.minBelow1;
-  if (span <= 1e-9) return GAIN_RED_DARK;
+  if (span <= 1e-9) return GAIN_RED_NORMAL;
   const t = (ratio - b.minBelow1) / span;
-  return lerpHex(GAIN_RED_DARK, GAIN_RED_LIGHT, t);
+  return lerpHex(GAIN_RED_NORMAL, GAIN_RED_LIGHT, t);
 }
 
 function renderWalletAssetGainCell(
@@ -811,8 +811,8 @@ function buildWalletPnlPlaceholder(): string {
   }).join('');
 
   const pieStackPlaceholderHtml = `<div class="wallet-pnl-pie-stack">
-      ${renderWalletPieCard('Asset status split', [])}
-      ${renderWalletPieCard('Winning vs Losing trades', [])}
+      ${renderWalletPieCard('Opened VS Closed Positions', [])}
+      ${renderWalletPieCard('Winning vs Losing Trades', [])}
     </div>`;
 
   return `<div class="wallet-pnl-layout">
@@ -1308,14 +1308,14 @@ function renderWalletPnl(
     const win = Math.max(0, Math.round(Number(mergedSummary.winningTradesCount) || 0));
     const lose = Math.max(0, Math.round(Number(mergedSummary.losingTradesCount) || 0));
     return [
-      { label: 'Winning trades', value: win, color: '#3b82f6' },
-      { label: 'Losing trades', value: lose, color: '#64748b' },
+      { label: 'Winning Trades', value: win, color: '#3b82f6' },
+      { label: 'Losing Trades', value: lose, color: '#64748b' },
     ];
   })();
 
   const pieStackHtml = `<div class="wallet-pnl-pie-stack">
-      ${renderWalletPieCard('Asset status split', statusSlices)}
-      ${renderWalletPieCard('Winning vs Losing trades', winningLosingTradeSlices)}
+      ${renderWalletPieCard('Opened VS Closed Positions', statusSlices)}
+      ${renderWalletPieCard('Winning vs Losing Trades', winningLosingTradeSlices)}
     </div>`;
 
   const trendRowsRaw = mergedSummary.pnlTrendSevenDays ?? [];
