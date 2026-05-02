@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Solana Top Traders Wallets & Tokens</title>
-  <link rel="stylesheet" href="app.css?v=125" />
+  <link rel="stylesheet" href="app.css?v=141" />
 </head>
 <body>
   <div class="container">
@@ -264,12 +264,18 @@
         <span class="section-error" id="tokenSectionError" hidden aria-hidden="true"></span>
       </div>
       <div class="token-section-content" id="tokenSectionContent">
-        <div class="token-header">
-          <img id="tokenLogo" alt="" class="token-logo" style="display:none" />
-          <div>
-            <span id="tokenSymbol" class="symbol">—</span>
-            <span id="tokenName" class="name">—</span>
+        <div class="token-section-top">
+          <div class="token-header">
+            <img id="tokenLogo" alt="" class="token-logo" style="display:none" />
+            <div>
+              <span id="tokenSymbol" class="symbol">—</span>
+              <span id="tokenName" class="name">—</span>
+            </div>
           </div>
+          <aside class="token-last-updated" aria-label="Token data last updated">
+            <span class="token-last-updated-label">Last updated</span>
+            <span class="token-last-updated-value" id="tokenLastUpdatedValue">—</span>
+          </aside>
         </div>
         <div class="token-stats-groups" id="tokenStats"></div>
       </div>
@@ -302,7 +308,7 @@
               </p>
               <div class="token-supply-wrap token-supply-wrap--trade-tier-pie">
                 <div
-                  class="token-supply-pie token-supply-pie--trade-tier-labels"
+                  class="token-supply-pie token-supply-pie--donut-labels"
                   id="tokenSupplyPieTradesCount"
                   aria-label="Share of total trade count across tiers among profitable traders (weighted by trades per trader, not headcount)"
                 ></div>
@@ -333,13 +339,13 @@
         </div>
       </div>
       <div class="token-supply-grid">
-        <div class="token-supply-card">
+        <div class="token-supply-card token-supply-card--volume-rov-pie">
           <div class="section-header">
-            <h2 id="tokenTopVolumeSelectedTitle">Volume by profit % (Last 30 Days)</h2>
+            <h2 id="tokenTopVolumeSelectedTitle">Volume by RoV (Last 30 Days)</h2>
           </div>
-          <p class="meta token-supply-card-desc">Dollar share per profit band (profit ÷ volume). Each slice is what fraction of total traded dollars falls in that profit range.</p>
+          <p class="meta token-supply-card-desc">Dollar share per return-on-volume (RoV) band — realized PnL ÷ volume. Each slice is the fraction of total traded dollars in that RoV range.</p>
           <div class="token-supply-wrap">
-            <div class="token-supply-pie" id="tokenSupplyPieTotal" aria-label="Dollar share by profit percent"></div>
+            <div class="token-supply-pie token-supply-pie--donut-labels" id="tokenSupplyPieTotal" aria-label="Dollar share by return on volume (RoV)"></div>
             <div class="token-supply-legend token-supply-legend--compact-grid" id="tokenSupplyLegendTotal"></div>
           </div>
         </div>
@@ -422,7 +428,7 @@
                   <th style="text-align: left">#</th>
                   <th style="text-align: left">Trader</th>
                   <th id="tokenTopPnlRealizedHeader" style="text-align: right">Realized PnL (30d)</th>
-                  <th id="tokenTopPnlRoiHeader" style="text-align: right">ROI % (30d)</th>
+                  <th id="tokenTopPnlRovHeader" style="text-align: right" title="Return on volume % (RoV)">RoV % (30d)</th>
                   <th id="tokenTopPnlUnrealizedHeader" style="text-align: right">Unrealized PnL (30d)</th>
                   <th id="tokenTopPnlVolumeHeader" style="text-align: right">Volume (30d)</th>
                   <th id="tokenTopPnl24hVolumeHeader" style="text-align: right">Volume (24h)</th>
@@ -442,6 +448,6 @@
       <pre id="errorText"></pre>
     </section>
   </div>
-  <script src="app.js?v=124"></script>
+  <script src="app.js?v=141"></script>
 </body>
 </html>

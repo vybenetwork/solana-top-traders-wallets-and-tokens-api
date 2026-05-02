@@ -635,6 +635,61 @@ button:active {
   margin: 0;
 }
 
+.token-section-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.65rem;
+}
+
+.token-last-updated {
+  position: relative;
+  flex: 0 0 auto;
+  margin-left: auto;
+  overflow: hidden;
+  padding: 0.5rem 0.85rem 0.55rem 1rem;
+  text-align: right;
+  min-width: min(11.75rem, 100%);
+  border-radius: 10px;
+  border: 1px solid rgba(129, 140, 248, 0.32);
+  background: linear-gradient(165deg, rgba(99, 102, 241, 0.14) 0%, rgba(20, 20, 26, 0.98) 48%, #0c0c10 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 10px 28px rgba(0, 0, 0, 0.4);
+}
+
+.token-last-updated::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 10px 0 0 10px;
+  background: linear-gradient(180deg, #c4b5fd, #6366f1 55%, #4f46e5);
+  pointer-events: none;
+}
+
+.token-last-updated-label {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+}
+
+.token-last-updated-value {
+  display: block;
+  margin-top: 0.22rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #f4f4f5;
+  font-variant-numeric: tabular-nums;
+}
+
 .token-header {
   display: flex;
   align-items: center;
@@ -642,22 +697,30 @@ button:active {
   margin-bottom: 1rem;
 }
 
+.token-section-content .token-header {
+  margin-bottom: 0;
+}
+
 .token-logo {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .token-header .symbol {
-  font-weight: 600;
-  font-size: 1.1rem;
+  font-weight: 700;
+  font-size: 1.2rem;
   display: block;
+  letter-spacing: -0.02em;
+  color: #fafafa;
 }
 
 .token-header .name {
-  font-size: 0.85rem;
-  color: #a1a1aa;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin-top: 0.12rem;
+  letter-spacing: 0.02em;
 }
 
 .token-stats-groups {
@@ -666,11 +729,382 @@ button:active {
   gap: 1.25rem;
 }
 
+/* Token stats inner cards: same surface language as .wallet-pnl-card, tighter rhythm */
+.token-section-content .token-stats-groups {
+  gap: 0.65rem;
+}
+
+.token-section-content .token-stats-row {
+  gap: 0.65rem;
+}
+
+.token-section-content .token-stats-groups > .token-stats-group,
+.token-section-content .token-stats-row .token-stats-group {
+  padding: 0.65rem 0.72rem 0.72rem 0.92rem;
+  border-radius: 12px;
+  background: linear-gradient(165deg, #141418 0%, #0c0c0f 55%, #0a0a0c 100%);
+  border: 1px solid #2a2a32;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.token-section-content .token-stats-groups .token-stats-group::before {
+  width: 3px;
+  border-radius: 12px 0 0 12px;
+}
+
+.token-section-content .token-stats-group-title {
+  flex-shrink: 0;
+  margin: 0 0 0.5rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+}
+
+.token-section-content .token-stat-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.token-section-content .token-stat-rows--2col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.token-section-content .token-stat-row {
+  display: grid;
+  grid-template-columns: 2.35rem minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.42rem 0.48rem 0.42rem 0.42rem;
+  border-radius: 8px;
+  border: 1px solid #2e2e38;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.28));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.token-section-content .token-stat-row-icon {
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.38);
+}
+
+.token-section-content .token-stat-row-icon-svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  display: block;
+}
+
+.token-section-content .token-stat-row-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.token-section-content .token-stat-row-label {
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #71717a;
+  line-height: 1.2;
+}
+
+.token-section-content .token-stat-row-value {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #e4e4e7;
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}
+
+.token-section-content .token-stat-row-price-num {
+  font-weight: 500;
+  color: #e4e4e7;
+}
+
+.token-section-content .token-stat-row-price-num--compact {
+  letter-spacing: 0.01em;
+}
+
+.token-section-content .token-price-zero-run {
+  font-size: 0.62em;
+  font-weight: 600;
+  line-height: 0;
+  vertical-align: super;
+  margin-left: 0.03em;
+  color: #cbd5e1;
+}
+
+.token-section-content .token-stat-price-suffix {
+  margin-left: 0.28em;
+  font-size: 0.72em;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.token-section-content .token-stat-price-neg {
+  margin-right: 0.06em;
+  font-weight: 500;
+  color: #e4e4e7;
+}
+
+.token-section-content .token-stat-row-value a {
+  color: #38bdf8;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.token-section-content .token-stat-row-value a:hover {
+  color: #7dd3fc;
+}
+
+/* Per-row accent (icon tile + tinted border like wallet metric chips) */
+.token-section-content .token-stat-row--mint {
+  border-color: rgba(56, 189, 248, 0.28);
+  background: linear-gradient(165deg, rgba(14, 165, 233, 0.09), rgba(0, 0, 0, 0.28));
+}
+
+.token-section-content .token-stat-row--mint .token-stat-row-icon {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.token-section-content .token-stat-row--symbol {
+  border-color: rgba(251, 191, 36, 0.25);
+  background: linear-gradient(165deg, rgba(245, 158, 11, 0.08), rgba(0, 0, 0, 0.26));
+}
+
+.token-section-content .token-stat-row--symbol .token-stat-row-icon {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.38);
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.token-section-content .token-stat-row--decimals {
+  border-color: rgba(167, 139, 250, 0.28);
+  background: linear-gradient(165deg, rgba(139, 92, 246, 0.08), rgba(0, 0, 0, 0.26));
+}
+
+.token-section-content .token-stat-row--decimals .token-stat-row-icon {
+  color: #c4b5fd;
+  border-color: rgba(167, 139, 250, 0.38);
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.token-section-content .token-stat-row--category {
+  border-color: rgba(249, 115, 22, 0.25);
+  background: linear-gradient(165deg, rgba(249, 115, 22, 0.07), rgba(0, 0, 0, 0.26));
+}
+
+.token-section-content .token-stat-row--category .token-stat-row-icon {
+  color: #fb923c;
+  border-color: rgba(251, 146, 60, 0.35);
+  background: rgba(249, 115, 22, 0.1);
+}
+
+.token-section-content .token-stat-row--subcategory {
+  border-color: rgba(244, 114, 182, 0.25);
+  background: linear-gradient(165deg, rgba(244, 114, 182, 0.07), rgba(0, 0, 0, 0.26));
+}
+
+.token-section-content .token-stat-row--subcategory .token-stat-row-icon {
+  color: #f472b6;
+  border-color: rgba(244, 114, 182, 0.35);
+  background: rgba(244, 63, 94, 0.08);
+}
+
+.token-section-content .token-stat-row--verified {
+  border-color: rgba(52, 211, 153, 0.26);
+  background: linear-gradient(165deg, rgba(16, 185, 129, 0.08), rgba(0, 0, 0, 0.26));
+}
+
+.token-section-content .token-stat-row--verified .token-stat-row-icon {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.38);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.token-section-content .token-stat-row--priceUsd {
+  border-color: rgba(56, 189, 248, 0.28);
+  background: linear-gradient(165deg, rgba(14, 165, 233, 0.08), rgba(0, 0, 0, 0.26));
+}
+
+.token-section-content .token-stat-row--priceUsd .token-stat-row-icon {
+  color: #7dd3fc;
+  border-color: rgba(125, 211, 252, 0.35);
+  background: rgba(14, 165, 233, 0.12);
+}
+
+.token-section-content .token-stat-row--marketCap {
+  border-color: rgba(96, 165, 250, 0.28);
+  background: linear-gradient(165deg, rgba(59, 130, 246, 0.08), rgba(0, 0, 0, 0.26));
+}
+
+.token-section-content .token-stat-row--marketCap .token-stat-row-icon {
+  color: #60a5fa;
+  border-color: rgba(96, 165, 250, 0.38);
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.token-section-content .token-stat-row--price1d {
+  border-color: rgba(148, 163, 184, 0.22);
+  background: linear-gradient(165deg, rgba(148, 163, 184, 0.06), rgba(0, 0, 0, 0.26));
+}
+
+.token-section-content .token-stat-row--price1d .token-stat-row-icon {
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.32);
+  background: rgba(100, 116, 139, 0.12);
+}
+
+.token-section-content .token-stat-row--price7d {
+  border-color: rgba(129, 140, 248, 0.28);
+  background: linear-gradient(165deg, rgba(99, 102, 241, 0.08), rgba(0, 0, 0, 0.26));
+}
+
+.token-section-content .token-stat-row--price7d .token-stat-row-icon {
+  color: #a5b4fc;
+  border-color: rgba(129, 140, 248, 0.38);
+  background: rgba(99, 102, 241, 0.12);
+}
+
+.token-section-content .token-stat-row--supply {
+  border-color: rgba(52, 211, 153, 0.28);
+  background: linear-gradient(165deg, rgba(16, 185, 129, 0.08), rgba(0, 0, 0, 0.26));
+}
+
+.token-section-content .token-stat-row--supply .token-stat-row-icon {
+  color: #4ade80;
+  border-color: rgba(52, 211, 153, 0.38);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.token-section-content .token-stat-row--tokenVol24h {
+  border-color: rgba(45, 212, 191, 0.28);
+  background: linear-gradient(165deg, rgba(20, 184, 166, 0.08), rgba(0, 0, 0, 0.26));
+}
+
+.token-section-content .token-stat-row--tokenVol24h .token-stat-row-icon {
+  color: #2dd4bf;
+  border-color: rgba(45, 212, 191, 0.38);
+  background: rgba(13, 148, 136, 0.12);
+}
+
+.token-section-content .token-stat-row--usdVol24h {
+  border-color: rgba(74, 222, 128, 0.28);
+  background: linear-gradient(165deg, rgba(34, 197, 94, 0.08), rgba(0, 0, 0, 0.26));
+}
+
+.token-section-content .token-stat-row--usdVol24h .token-stat-row-icon {
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.38);
+  background: rgba(22, 163, 74, 0.12);
+}
+
 .token-stats-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.25rem;
   align-items: stretch;
+}
+
+/* Token stats: 50% overview | 50% price + supply (two columns inside right half) */
+.token-stats-row.token-stats-row--split-overview {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.token-stats-row--split-overview > .token-stats-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.token-stats-col--overview .token-stats-group {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.token-stats-col--overview .token-stat-rows--2col {
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: start;
+}
+
+.token-stats-pair-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.65rem;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: start;
+  align-self: stretch;
+}
+
+.token-stats-pair-grid > .token-stats-group {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.token-stats-pair-grid .token-stat-rows {
+  flex: 0 1 auto;
+}
+
+@media (max-width: 960px) {
+  .token-stats-row.token-stats-row--split-overview {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .token-stats-col--overview .token-stats-group {
+    flex: 0 1 auto;
+    height: auto;
+  }
+
+  .token-stats-col--overview .token-stat-rows--2col {
+    flex: 0 1 auto;
+  }
+
+  .token-stats-pair-grid {
+    flex: 0 1 auto;
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .token-stats-pair-grid > .token-stats-group {
+    height: auto;
+  }
+
+  .token-stats-pair-grid .token-stat-rows {
+    flex: 0 1 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .token-section-content .token-stat-rows--2col {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
@@ -886,8 +1320,21 @@ button:active {
   pointer-events: none;
 }
 
-.token-supply-pie--trade-tier-labels {
+.token-supply-pie--donut-labels {
   overflow: visible;
+}
+
+.token-supply-card:has(.token-supply-pie--donut-labels) {
+  overflow: visible;
+}
+
+/* Volume-by-profit % card only: breathe room under the card rim + slightly smaller donut. */
+.token-supply-card--volume-rov-pie {
+  padding-top: calc(1rem + 6px);
+}
+
+.token-supply-card--volume-rov-pie .token-supply-pie {
+  width: clamp(158px, 17vw, 208px);
 }
 
 .token-supply-pie__label-svg {
@@ -1033,7 +1480,7 @@ button:active {
   color: #86efac;
 }
 
-/* ROI total pie: two legend items per row, tighter type */
+/* RoV total pie: two legend items per row, tighter type */
 .token-supply-legend--compact-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1635,7 +2082,7 @@ button:active {
 
 .meta.token-supply-period-desc,
 .meta.token-supply-card-desc {
-  margin: 0 0 13px 0;
+  margin: 0 0 26px 0;
   font-size: 0.74rem;
   line-height: 1.4;
   font-weight: 400;
@@ -2662,11 +3109,6 @@ button:active {
 
 .wallet-amt-stack-value--sell {
   color: #ef4444;
-}
-
-.wallet-amt-stack-value--struck {
-  text-decoration: line-through;
-  text-decoration-color: #ffffff;
 }
 
 .wallet-amt-side-icon {

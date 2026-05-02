@@ -46,14 +46,14 @@ interface TokenTopPnlTraderRow {
   tradesCount?: number;
 }
 
-/** Second token pie: volume share by realized PnL ÷ volume (ROI %) band. */
+/** Second token pie: volume share by realized PnL ÷ volume (RoV / return-on-volume %) band. */
 const TOKEN_TRADER_ROI_VOLUME_BANDS: readonly { label: string; color: string }[] = [
-  { label: 'Below 0% PnL', color: '#be123c' },
-  { label: 'Between 0–10% PnL', color: '#fb923c' },
-  { label: 'Between 10–25% PnL', color: '#eab308' },
-  { label: 'Between 25–50% PnL', color: '#a3e635' },
-  { label: 'Between 50–100% PnL', color: '#4ade80' },
-  { label: '100%+ PnL', color: '#059669' },
+  { label: 'Below 0% RoV', color: '#be123c' },
+  { label: 'Between 0–10% RoV', color: '#fb923c' },
+  { label: 'Between 10–25% RoV', color: '#eab308' },
+  { label: 'Between 25–50% RoV', color: '#a3e635' },
+  { label: 'Between 50–100% RoV', color: '#4ade80' },
+  { label: '100%+ RoV', color: '#059669' },
 ];
 
 function traderRoiPercentFromRow(row: TokenTopPnlTraderRow): number | null {
@@ -73,7 +73,7 @@ function roiBandIndexFromPct(pct: number): number {
   return 5;
 }
 
-/** When coarse ROI buckets collapse, split the donut into at least this many slices (if enough traders). */
+/** When coarse RoV buckets collapse, split the donut into at least this many slices (if enough traders). */
 const MIN_ROI_PIE_SEGMENTS = 6;
 
 /** Profitable trade-tier pie: six bands — fixed “2” and “3–5” trades plus four high bands from canonical edges (merged by least trade-mass when needed). */
@@ -81,7 +81,7 @@ const TRADE_TIER_PIE_SEGMENT_COUNT = 6;
 const TRADE_TIER_FIXED_TIER_COUNT = 2;
 const TRADE_TIER_HIGH_MERGE_SLOTS = TRADE_TIER_PIE_SEGMENT_COUNT - TRADE_TIER_FIXED_TIER_COUNT;
 
-/** Colors for equal-trader-count ROI bins (low → high ROI), aligned with coarse-band palette. */
+/** Colors for equal-trader-count RoV bins (low → high RoV), aligned with coarse-band palette. */
 const ROI_EQUAL_COUNT_BIN_COLORS: readonly string[] = [
   '#be123c',
   '#fb923c',
@@ -91,7 +91,7 @@ const ROI_EQUAL_COUNT_BIN_COLORS: readonly string[] = [
   '#059669',
 ];
 
-/** Profitable trade-tier pie only: light → dark blue (distinct from ROI volume pie). */
+/** Profitable trade-tier pie only: light → dark blue (distinct from RoV volume pie). */
 const TRADE_TIER_PIE_COLORS: readonly string[] = [
   '#e0f2fe',
   '#7dd3fc',
@@ -208,6 +208,7 @@ const tokenSectionError = document.getElementById('tokenSectionError') as HTMLEl
 const tokenLogo = document.getElementById('tokenLogo') as HTMLImageElement;
 const tokenSymbol = document.getElementById('tokenSymbol') as HTMLElement;
 const tokenName = document.getElementById('tokenName') as HTMLElement;
+const tokenLastUpdatedValue = document.getElementById('tokenLastUpdatedValue') as HTMLElement;
 const tokenStats = document.getElementById('tokenStats') as HTMLElement;
 const tokenSupplyPanelTotal = document.getElementById('tokenSupplyPanelTotal') as HTMLElement;
 const tokenSupplyPieTotal = document.getElementById('tokenSupplyPieTotal') as HTMLElement;
@@ -245,7 +246,7 @@ const tokenTopPnlError = document.getElementById('tokenTopPnlError') as HTMLElem
 const tokenTopPnlMeta = document.getElementById('tokenTopPnlMeta') as HTMLElement;
 const tokenTopPnlBody = document.getElementById('tokenTopPnlBody') as HTMLElement;
 const tokenTopPnlRealizedHeader = document.getElementById('tokenTopPnlRealizedHeader') as HTMLElement;
-const tokenTopPnlRoiHeader = document.getElementById('tokenTopPnlRoiHeader') as HTMLElement;
+const tokenTopPnlRovHeader = document.getElementById('tokenTopPnlRovHeader') as HTMLElement;
 const tokenTopPnlUnrealizedHeader = document.getElementById('tokenTopPnlUnrealizedHeader') as HTMLElement;
 const tokenTopPnlVolumeHeader = document.getElementById('tokenTopPnlVolumeHeader') as HTMLElement;
 const tokenTopPnl24hVolumeHeader = document.getElementById('tokenTopPnl24hVolumeHeader') as HTMLElement;
@@ -383,6 +384,14 @@ function truncateAddress(addr: string | undefined): string {
   return `${addr.slice(0, 4)}....${addr.slice(-4)}`;
 }
 
+/** Mint in token stats: `AAAAA....BBBBB` for long addresses (full value in `title`). */
+function truncateMintMiddle(mint: string | undefined, head = 5, tail = 5): string {
+  const m = (mint || '').trim();
+  if (!m) return '';
+  if (m.length <= head + tail + 4) return m;
+  return `${m.slice(0, head)}....${m.slice(-tail)}`;
+}
+
 const TOKEN_HIGHLIGHT_NAME_MAX_LEN = 12;
 
 function escapeHtmlAttr(value: string): string {
@@ -453,8 +462,8 @@ function formatUsdCell(n: number | null | undefined): string {
   return `<span class="usd-tone ${usdToneClass(n)}">${formatUsdFull(n)}</span>`;
 }
 
-/** Realized PnL ÷ volume for the row; same basis as token ROI pies. */
-function formatRoiPctCell(row: TokenTopPnlTraderRow): string {
+/** Realized PnL ÷ volume for the row; same basis as token RoV pies. */
+function formatRovPctCell(row: TokenTopPnlTraderRow): string {
   const pct = traderRoiPercentFromRow(row);
   if (pct == null) return '<span class="usd-tone usd-tone--neutral">—</span>';
   return `<span class="usd-tone ${usdToneClass(pct)}">${formatPctSmart(pct)}</span>`;
@@ -903,13 +912,11 @@ function isWalletPositionClosed(status: string | null | undefined): boolean {
 }
 
 function renderWalletAssetBuySellAmtCell(metric: WalletPnlTokenMetric): string {
-  const closed = isWalletPositionClosed(metric.status);
-  const strikeClass = closed ? ' wallet-amt-stack-value--struck' : '';
   const buyText = formatNum(metric.buys?.tokenAmount);
   const sellText = formatNum(metric.sells?.tokenAmount);
   return `<div class="wallet-asset-buysell-amt">
-    <div class="wallet-amt-stack-row"><span class="wallet-amt-stack-value wallet-amt-stack-value--buy${strikeClass}">${buyText}</span><span class="wallet-amt-side-icon wallet-amt-side-icon--buy" aria-hidden="true">▲</span></div>
-    <div class="wallet-amt-stack-row"><span class="wallet-amt-stack-value wallet-amt-stack-value--sell${strikeClass}">${sellText}</span><span class="wallet-amt-side-icon wallet-amt-side-icon--sell" aria-hidden="true">▼</span></div>
+    <div class="wallet-amt-stack-row"><span class="wallet-amt-stack-value wallet-amt-stack-value--buy">${buyText}</span><span class="wallet-amt-side-icon wallet-amt-side-icon--buy" aria-hidden="true">▲</span></div>
+    <div class="wallet-amt-stack-row"><span class="wallet-amt-stack-value wallet-amt-stack-value--sell">${sellText}</span><span class="wallet-amt-side-icon wallet-amt-side-icon--sell" aria-hidden="true">▼</span></div>
   </div>`;
 }
 
@@ -1065,7 +1072,7 @@ function applyTokenTopPnl24hColumnVisibility(): void {
   const show24hColumns = !is24hResolution;
   const resolutionLabel = is24hResolution ? '24h' : tokenTopPnlResolution.value.trim();
   tokenTopPnlRealizedHeader.textContent = `Realized PnL (${resolutionLabel})`;
-  tokenTopPnlRoiHeader.textContent = `ROI % (${resolutionLabel})`;
+  tokenTopPnlRovHeader.textContent = `RoV % (${resolutionLabel})`;
   tokenTopPnlUnrealizedHeader.textContent = `Unrealized PnL (${resolutionLabel})`;
   tokenTopPnlVolumeHeader.textContent = `Volume (${resolutionLabel})`;
   tokenTopPnlTradesHeader.textContent = `Trades (${resolutionLabel})`;
@@ -1091,6 +1098,44 @@ function formatPrice(n: number | null | undefined): string {
   return trim(num.toFixed(12));
 }
 
+/** Token stats: tiny prices as 0.0<sup>n</sup>abcd (n = leading zeros after decimal; abcd = 4 digits after first non-zero). */
+function formatTokenStatPriceValueHtml(
+  n: number | null | undefined,
+  opts?: { usdSuffix?: boolean },
+): string {
+  if (n == null || !Number.isFinite(Number(n))) return escapeHtmlText('—');
+  const raw = Number(n);
+  const neg = raw < 0;
+  const num = Math.abs(raw);
+  const minus = neg ? '<span class="token-stat-price-neg">−</span>' : '';
+  const suffix = opts?.usdSuffix
+    ? '<span class="token-stat-price-suffix">USD</span>'
+    : '';
+
+  if (num === 0) {
+    return `${minus}<span class="token-stat-row-price-num">0</span>${suffix}`;
+  }
+  if (num >= 1) {
+    return `${minus}<span class="token-stat-row-price-num">${escapeHtmlText(formatPrice(neg ? -num : num))}</span>${suffix}`;
+  }
+  if (num > 0.0099) {
+    return `${minus}<span class="token-stat-row-price-num">${escapeHtmlText(formatPrice(neg ? -num : num))}</span>${suffix}`;
+  }
+
+  const s = num.toFixed(24).replace(/\.?0+$/, '');
+  const m = s.match(/^0\.(0*)([1-9]\d*)$/);
+  if (!m) {
+    return `${minus}<span class="token-stat-row-price-num">${escapeHtmlText(formatPrice(neg ? -num : num))}</span>${suffix}`;
+  }
+  const zeroRun = m[1].length;
+  const sigDigits = m[2];
+  const head = sigDigits[0];
+  const tail = sigDigits.slice(1, 5);
+  const compact = `${head}${tail}`;
+
+  return `${minus}<span class="token-stat-row-price-num token-stat-row-price-num--compact">0.0<sup class="token-price-zero-run">${String(zeroRun)}</sup>${escapeHtmlText(compact)}</span>${suffix}`;
+}
+
 const tokenSectionIcons: Record<string, string> = {
   overview:
     '<svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg>',
@@ -1098,15 +1143,101 @@ const tokenSectionIcons: Record<string, string> = {
     '<svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
   supply:
     '<svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',
-  meta:
-    '<svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+};
+
+type TokenStatRowKey =
+  | 'mint'
+  | 'symbol'
+  | 'decimals'
+  | 'category'
+  | 'subcategory'
+  | 'verified'
+  | 'priceUsd'
+  | 'marketCap'
+  | 'price1d'
+  | 'price7d'
+  | 'supply'
+  | 'tokenVol24h'
+  | 'usdVol24h';
+
+interface TokenStatRow {
+  key: TokenStatRowKey;
+  label: string;
+  /** Inner HTML (caller supplies safe markup or escaped text). */
+  valueHtml: string;
+}
+
+const TOKEN_STAT_ROW_ICONS: Record<TokenStatRowKey, string> = {
+  mint:
+    '<svg class="token-stat-row-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+  symbol:
+    '<svg class="token-stat-row-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/></svg>',
+  decimals:
+    '<svg class="token-stat-row-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><path d="M8 10h.01M12 10h.01M16 10h.01M8 14h8M8 18h5"/></svg>',
+  category:
+    '<svg class="token-stat-row-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
+  subcategory:
+    '<svg class="token-stat-row-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
+  verified:
+    '<svg class="token-stat-row-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>',
+  priceUsd:
+    '<svg class="token-stat-row-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  marketCap:
+    '<svg class="token-stat-row-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+  price1d:
+    '<svg class="token-stat-row-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  price7d:
+    '<svg class="token-stat-row-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  supply:
+    '<svg class="token-stat-row-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',
+  tokenVol24h:
+    '<svg class="token-stat-row-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
+  usdVol24h:
+    '<svg class="token-stat-row-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>',
 };
 
 interface SectionSpec {
   icon: string;
   title: string;
-  theme: 'overview' | 'price' | 'supply' | 'meta';
-  rows: [string, string | number | undefined][];
+  theme: 'overview' | 'price' | 'supply';
+  rows: TokenStatRow[];
+  /** Overview: flow stat rows in two columns. */
+  statRowsLayout?: 'single' | 'twoColumn';
+}
+
+function tokenStatRowHtml(row: TokenStatRow): string {
+  const icon = TOKEN_STAT_ROW_ICONS[row.key];
+  const aria = escapeHtmlAttr(row.label);
+  return `<div class="token-stat-row token-stat-row--${row.key}" role="group" aria-label="${aria}">
+    <div class="token-stat-row-icon" aria-hidden="true">${icon}</div>
+    <div class="token-stat-row-body">
+      <span class="token-stat-row-label">${escapeHtmlText(row.label)}</span>
+      <span class="token-stat-row-value">${row.valueHtml}</span>
+    </div>
+  </div>`;
+}
+
+function tokenStatSectionHtml(s: SectionSpec): string {
+  const rows = s.rows.map((r) => tokenStatRowHtml(r)).join('');
+  const rowsClass =
+    s.statRowsLayout === 'twoColumn' ? 'token-stat-rows token-stat-rows--2col' : 'token-stat-rows';
+  return `<section class="token-stats-group token-stats-group--${s.theme}">
+      <h3 class="token-stats-group-title">${s.icon}<span>${s.title}</span></h3>
+      <div class="${rowsClass}">${rows}</div>
+    </section>`;
+}
+
+function formatTokenUpdateTime(ts: number | undefined): string {
+  if (ts == null) return '—';
+  const d = new Date(ts * 1000);
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
 }
 
 function showSectionError(el: HTMLElement, msg: string): void {
@@ -1144,41 +1275,54 @@ function renderToken(t: TokenData): void {
   tokenLogo.alt = t.symbol || '';
   tokenLogo.style.display = tokenLogoSrc ? 'block' : 'none';
   tokenSymbol.textContent = t.symbol || '—';
-  tokenName.textContent = t.name || t.mintAddress || '—';
-
-  const sectionHtml = (s: SectionSpec): string => `<section class="token-stats-group token-stats-group--${s.theme}">
-      <h3 class="token-stats-group-title">${s.icon}<span>${s.title}</span></h3>
-      <dl class="token-stats">${s.rows.map(([label, value]) => `<dt>${label}</dt><dd>${value ?? '—'}</dd>`).join('')}</dl>
-    </section>`;
+  const nameTrim = (t.name || '').trim();
+  const mintTrim = (t.mintAddress || '').trim();
+  if (nameTrim) {
+    tokenName.textContent = nameTrim;
+    tokenName.removeAttribute('title');
+  } else if (mintTrim) {
+    tokenName.textContent = truncateMintMiddle(mintTrim);
+    tokenName.title = mintTrim;
+  } else {
+    tokenName.textContent = '—';
+    tokenName.removeAttribute('title');
+  }
 
   const sym = (t.symbol || '').toUpperCase();
-  const formatUpdateTime = (ts: number | undefined): string => {
-    if (ts == null) return '—';
-    const d = new Date(ts * 1000);
-    return d.toLocaleString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-  };
+  const dashTxt = escapeHtmlText('—');
 
-  const mintLink = t.mintAddress
-    ? `<a href="https://vybe.fyi/tokens/${encodeURIComponent(t.mintAddress)}" target="_blank" rel="noopener noreferrer" class="mono" title="${t.mintAddress}">${t.mintAddress}</a>`
-    : '—';
+  const mintLink = mintTrim
+    ? `<a href="https://vybe.fyi/tokens/${encodeURIComponent(mintTrim)}" target="_blank" rel="noopener noreferrer" class="mono" title="${escapeHtmlAttr(mintTrim)}">${truncateMintMiddle(mintTrim)}</a>`
+    : '';
+  const decVal = t.decimal ?? t.decimals;
   const overview: SectionSpec = {
     icon: tokenSectionIcons.overview,
     title: 'Overview',
     theme: 'overview',
+    statRowsLayout: 'twoColumn',
     rows: [
-      ['Mint', mintLink],
-      ['Symbol', sym || '—'],
-      ['Decimals', t.decimal ?? t.decimals],
-      ['Category', t.category ?? '—'],
-      ['Subcategory', t.subcategory ?? '—'],
-      ['Verified', t.verified != null ? String(t.verified) : '—'],
+      { key: 'mint', label: 'Mint', valueHtml: mintLink || dashTxt },
+      { key: 'symbol', label: 'Symbol', valueHtml: escapeHtmlText(sym || '—') },
+      {
+        key: 'decimals',
+        label: 'Decimals',
+        valueHtml: decVal != null ? escapeHtmlText(String(decVal)) : dashTxt,
+      },
+      {
+        key: 'category',
+        label: 'Category',
+        valueHtml: escapeHtmlText((t.category ?? '').trim() || '—'),
+      },
+      {
+        key: 'subcategory',
+        label: 'Subcategory',
+        valueHtml: escapeHtmlText((t.subcategory ?? '').trim() || '—'),
+      },
+      {
+        key: 'verified',
+        label: 'Verified',
+        valueHtml: t.verified != null ? escapeHtmlText(String(t.verified)) : dashTxt,
+      },
     ],
   };
   const priceSection: SectionSpec = {
@@ -1186,10 +1330,26 @@ function renderToken(t: TokenData): void {
     title: 'Price & market cap',
     theme: 'price',
     rows: [
-      ['Price (USD)', t.price != null ? `${formatPrice(t.price)} USD` : '—'],
-      ['Market cap', t.marketCap != null ? `${formatNum(t.marketCap)} USD` : '—'],
-      ['Price (1d ago)', t.price1d != null ? formatPrice(t.price1d) : '—'],
-      ['Price (7d ago)', t.price7d != null ? formatPrice(t.price7d) : '—'],
+      {
+        key: 'priceUsd',
+        label: 'Price (USD)',
+        valueHtml: t.price != null ? formatTokenStatPriceValueHtml(t.price, { usdSuffix: true }) : dashTxt,
+      },
+      {
+        key: 'marketCap',
+        label: 'Market cap',
+        valueHtml: t.marketCap != null ? escapeHtmlText(`${formatNum(t.marketCap)} USD`) : dashTxt,
+      },
+      {
+        key: 'price1d',
+        label: 'Price (1d ago)',
+        valueHtml: t.price1d != null ? formatTokenStatPriceValueHtml(t.price1d) : dashTxt,
+      },
+      {
+        key: 'price7d',
+        label: 'Price (7d ago)',
+        valueHtml: t.price7d != null ? formatTokenStatPriceValueHtml(t.price7d) : dashTxt,
+      },
     ],
   };
   const supplyVolumeSection: SectionSpec = {
@@ -1197,42 +1357,51 @@ function renderToken(t: TokenData): void {
     title: 'Supply & volume (24h)',
     theme: 'supply',
     rows: [
-      ['Current supply', t.currentSupply != null ? `${formatNum(t.currentSupply)}${sym ? ` ${sym}` : ''}` : '—'],
-      ['Token volume (24h)', t.tokenAmountVolume24h != null ? `${formatNum(t.tokenAmountVolume24h)}${sym ? ` ${sym}` : ''}` : '—'],
-      ['USD volume (24h)', t.usdValueVolume24h != null ? `${formatNum(t.usdValueVolume24h)} USD` : '—'],
+      {
+        key: 'supply',
+        label: 'Current supply',
+        valueHtml:
+          t.currentSupply != null
+            ? escapeHtmlText(`${formatNum(t.currentSupply)}${sym ? ` ${sym}` : ''}`)
+            : dashTxt,
+      },
+      {
+        key: 'tokenVol24h',
+        label: 'Token volume (24h)',
+        valueHtml:
+          t.tokenAmountVolume24h != null
+            ? escapeHtmlText(`${formatNum(t.tokenAmountVolume24h)}${sym ? ` ${sym}` : ''}`)
+            : dashTxt,
+      },
+      {
+        key: 'usdVol24h',
+        label: 'USD volume (24h)',
+        valueHtml:
+          t.usdValueVolume24h != null ? escapeHtmlText(`${formatNum(t.usdValueVolume24h)} USD`) : dashTxt,
+      },
     ],
   };
-  const metaSection: SectionSpec = {
-    icon: tokenSectionIcons.meta,
-    title: 'Last updated',
-    theme: 'meta',
-    rows: [['Update time', formatUpdateTime(t.updateTime)]],
-  };
 
-  tokenStats.innerHTML =
-    sectionHtml(overview) +
-    `<div class="token-stats-row"><div class="token-stats-col">${sectionHtml(priceSection)}</div><div class="token-stats-col">${sectionHtml(supplyVolumeSection)}</div></div>` +
-    sectionHtml(metaSection);
+  tokenLastUpdatedValue.textContent = formatTokenUpdateTime(t.updateTime);
+  tokenStats.innerHTML = `<div class="token-stats-row token-stats-row--split-overview"><div class="token-stats-col token-stats-col--overview">${tokenStatSectionHtml(overview)}</div><div class="token-stats-col token-stats-col--pair"><div class="token-stats-pair-grid">${tokenStatSectionHtml(priceSection)}${tokenStatSectionHtml(supplyVolumeSection)}</div></div></div>`;
 }
 
 /** Same sections/labels as `renderToken`, values shown as em dash until data loads. */
 function buildTokenStatsPlaceholderHtml(): string {
   const dash = '—';
-  const sectionHtml = (s: SectionSpec): string => `<section class="token-stats-group token-stats-group--${s.theme}">
-      <h3 class="token-stats-group-title">${s.icon}<span>${s.title}</span></h3>
-      <dl class="token-stats">${s.rows.map(([label, value]) => `<dt>${label}</dt><dd>${value ?? dash}</dd>`).join('')}</dl>
-    </section>`;
+  const d = escapeHtmlText(dash);
   const overview: SectionSpec = {
     icon: tokenSectionIcons.overview,
     title: 'Overview',
     theme: 'overview',
+    statRowsLayout: 'twoColumn',
     rows: [
-      ['Mint', `<span class="mono">${dash}</span>`],
-      ['Symbol', dash],
-      ['Decimals', dash],
-      ['Category', dash],
-      ['Subcategory', dash],
-      ['Verified', dash],
+      { key: 'mint', label: 'Mint', valueHtml: `<span class="mono">${d}</span>` },
+      { key: 'symbol', label: 'Symbol', valueHtml: d },
+      { key: 'decimals', label: 'Decimals', valueHtml: d },
+      { key: 'category', label: 'Category', valueHtml: d },
+      { key: 'subcategory', label: 'Subcategory', valueHtml: d },
+      { key: 'verified', label: 'Verified', valueHtml: d },
     ],
   };
   const priceSection: SectionSpec = {
@@ -1240,10 +1409,10 @@ function buildTokenStatsPlaceholderHtml(): string {
     title: 'Price & market cap',
     theme: 'price',
     rows: [
-      ['Price (USD)', dash],
-      ['Market cap', dash],
-      ['Price (1d ago)', dash],
-      ['Price (7d ago)', dash],
+      { key: 'priceUsd', label: 'Price (USD)', valueHtml: d },
+      { key: 'marketCap', label: 'Market cap', valueHtml: d },
+      { key: 'price1d', label: 'Price (1d ago)', valueHtml: d },
+      { key: 'price7d', label: 'Price (7d ago)', valueHtml: d },
     ],
   };
   const supplyVolumeSection: SectionSpec = {
@@ -1251,22 +1420,12 @@ function buildTokenStatsPlaceholderHtml(): string {
     title: 'Supply & volume (24h)',
     theme: 'supply',
     rows: [
-      ['Current supply', dash],
-      ['Token volume (24h)', dash],
-      ['USD volume (24h)', dash],
+      { key: 'supply', label: 'Current supply', valueHtml: d },
+      { key: 'tokenVol24h', label: 'Token volume (24h)', valueHtml: d },
+      { key: 'usdVol24h', label: 'USD volume (24h)', valueHtml: d },
     ],
   };
-  const metaSection: SectionSpec = {
-    icon: tokenSectionIcons.meta,
-    title: 'Last updated',
-    theme: 'meta',
-    rows: [['Update time', dash]],
-  };
-  return (
-    sectionHtml(overview) +
-    `<div class="token-stats-row"><div class="token-stats-col">${sectionHtml(priceSection)}</div><div class="token-stats-col">${sectionHtml(supplyVolumeSection)}</div></div>` +
-    sectionHtml(metaSection)
-  );
+  return `<div class="token-stats-row token-stats-row--split-overview"><div class="token-stats-col token-stats-col--overview">${tokenStatSectionHtml(overview)}</div><div class="token-stats-col token-stats-col--pair"><div class="token-stats-pair-grid">${tokenStatSectionHtml(priceSection)}${tokenStatSectionHtml(supplyVolumeSection)}</div></div></div>`;
 }
 
 function buildWalletTopTraderParams(mode: SearchMode, query: string): URLSearchParams {
@@ -1729,7 +1888,7 @@ function renderTokenTopPnlTraders(
         <td>${rank}</td>
         <td>${traderLink}</td>
         <td style="text-align:right">${formatUsdCell(row.realizedPnlUsd)}</td>
-        <td style="text-align:right">${formatRoiPctCell(row)}</td>
+        <td style="text-align:right">${formatRovPctCell(row)}</td>
         <td style="text-align:right">${formatUsdCell(row.unrealizedPnlUsd)}</td>
         <td style="text-align:right">${formatUsdCell(row.totalVolumeUsd)}</td>
         <td class="token-top-pnl-24h-col" style="text-align:right">${formatUsdCell(vol24h)}</td>
@@ -1837,14 +1996,14 @@ function setTradeTierDashboardMeta(titleResolution: string, resolutionLabel: str
   const lim = getTokenTopPnlLimitDisplay();
   tokenTopTradesByProfitTitle.textContent = `Profitable traders by activity (Last ${titleResolution})`;
   if (tokenTradeTierLede) {
-    tokenTradeTierLede.textContent = `Trade-count tiers for the top ${lim} fetch (${resolutionLabel}); positive ROI only.`;
+    tokenTradeTierLede.textContent = `Trade-count tiers for the top ${lim} fetch (${resolutionLabel}); positive RoV only.`;
   }
   if (tokenTradeTierFooterMethodology) {
     tokenTradeTierFooterMethodology.textContent =
       'Same band edges as the trades column; slice angle ∝ each trader’s tradesCount (tiers folded when needed).';
   }
   if (tokenTradeTierFooterScope) {
-    tokenTradeTierFooterScope.textContent = `Vybe token top‑PnL for this mint: top ${lim} at ${resolutionLabel}; only ROI‑positive wallets, same fetch and filters as the charts above.`;
+    tokenTradeTierFooterScope.textContent = `Vybe token top‑PnL for this mint: top ${lim} at ${resolutionLabel}; only RoV‑positive wallets, same fetch and filters as the charts above.`;
   }
   if (tokenSupplyCardDescPnl) {
     tokenSupplyCardDescPnl.textContent = `Traders per realized PnL band (top ${lim}, ${resolutionLabel}).`;
@@ -1861,7 +2020,7 @@ function syncTokenSupplySectionHeadingsForResolution(): void {
   const resolutionLabel = formatResolutionSectionLabel(tokenTopPnlResolution.value);
   const titleResolution = formatResolutionForTitle(resolutionLabel);
   tokenSupplySelectedTitle.textContent = resolutionLabel;
-  tokenTopVolumeSelectedTitle.textContent = `Volume by profit % (Last ${titleResolution})`;
+  tokenTopVolumeSelectedTitle.textContent = `Volume by RoV (Last ${titleResolution})`;
   setTradeTierDashboardMeta(titleResolution, resolutionLabel);
   tokenPnlSelectedTitle.textContent = `PnL distribution (Last ${titleResolution})`;
   tokenTradesCountSelectedTitle.textContent = `Trades count distribution (Last ${titleResolution})`;
@@ -1988,13 +2147,15 @@ function applyTokenModeChartsPlaceholder(): void {
   tokenSupplyLegendTotal.innerHTML = TOKEN_TRADER_ROI_VOLUME_BANDS.map((b) =>
     renderPieLegendRowPlaceholder(b.label, b.color)
   ).join('');
+  clearDonutPieOverlays(tokenSupplyPieTotal);
+  mountDonutPieCenterHub(tokenSupplyPieTotal, { mock: true, hubSubline: '—' });
 
   tokenSupplyPieTradesCount.style.background = buildPieGradientWithGaps(
     new Array(TRADE_TIER_PIE_SEGMENT_COUNT).fill(0),
     TRADE_TIER_PIE_COLORS.slice(0, TRADE_TIER_PIE_SEGMENT_COUNT)
   );
-  clearTradeTierPieLabelOverlay(tokenSupplyPieTradesCount);
-  mountTradeTierPieCenterHub(tokenSupplyPieTradesCount, { mock: true, totalTrades: 0 });
+  clearDonutPieOverlays(tokenSupplyPieTradesCount);
+  mountDonutPieCenterHub(tokenSupplyPieTradesCount, { mock: true, hubSubline: '—' });
   tokenSupplyLegendTradesCount.innerHTML = TRADE_TIER_PIE_COLORS.slice(0, TRADE_TIER_PIE_SEGMENT_COUNT)
     .map((color) => renderTierPieLegendPlaceholder(color))
     .join('');
@@ -2027,6 +2188,8 @@ function applyTokenModePlaceholder(): void {
   tokenLogo.style.display = 'none';
   tokenSymbol.textContent = dash;
   tokenName.textContent = dash;
+  tokenName.removeAttribute('title');
+  tokenLastUpdatedValue.textContent = dash;
   tokenStats.innerHTML = buildTokenStatsPlaceholderHtml();
   applyTokenModeChartsPlaceholder();
 }
@@ -2364,54 +2527,6 @@ function buildCountTierEdges(maxVal: number): number[] {
   return edges;
 }
 
-function applyMinVisibleSlices(realSlices: number[], minVisiblePct = 0.75): number[] {
-  const adjusted = realSlices.map((v) => Math.max(0, v));
-  const tinyEntries = adjusted
-    .map((v, i) => ({ v, i }))
-    .filter(({ v }) => v > 0 && v < minVisiblePct);
-  const tinyIdx = tinyEntries.map(({ i }) => i);
-  if (tinyIdx.length === 0) return adjusted;
-
-  const targetTotal = adjusted.reduce((sum, v) => sum + v, 0);
-  const tinyValues = tinyEntries.map(({ v }) => v);
-  const minTiny = Math.min(...tinyValues);
-  const maxTiny = Math.max(...tinyValues);
-  tinyEntries.forEach(({ v, i }) => {
-    if (maxTiny === minTiny) {
-      adjusted[i] = minVisiblePct;
-      return;
-    }
-    // Boost tiny slices for visibility while preserving their ordering.
-    const normalized = (v - minTiny) / (maxTiny - minTiny);
-    adjusted[i] = minVisiblePct * (1 + normalized * 0.5);
-  });
-  let overflow = adjusted.reduce((sum, v) => sum + v, 0) - targetTotal;
-  if (overflow <= 0) return adjusted;
-
-  const donorIndices = adjusted
-    .map((v, i) => ({ v, i }))
-    .filter(({ i, v }) => !tinyIdx.includes(i) && v > 0)
-    .sort((a, b) => b.v - a.v)
-    .map(({ i }) => i);
-
-  for (const i of donorIndices) {
-    if (overflow <= 0) break;
-    const reducible = Math.max(0, adjusted[i]);
-    const cut = Math.min(reducible, overflow);
-    adjusted[i] -= cut;
-    overflow -= cut;
-  }
-
-  if (overflow > 0) {
-    const total = adjusted.reduce((sum, v) => sum + v, 0);
-    if (total > 0) {
-      return adjusted.map((v) => (v / total) * targetTotal);
-    }
-  }
-
-  return adjusted;
-}
-
 /** Gap wedges between slices; must stay in sync with {@link tradeTierPieSliceMidAnglesDeg}. */
 const PIE_CONIC_GAP_DEG = 1.2;
 
@@ -2507,12 +2622,12 @@ function tradeTierPieSliceSpanDeg(slices: number[], gapDeg: number): (number | n
   return out;
 }
 
-function clearTradeTierPieLabelOverlay(pieEl: HTMLElement): void {
+function clearDonutPieOverlays(pieEl: HTMLElement): void {
   pieEl.querySelector('.token-supply-pie__label-svg')?.remove();
   pieEl.querySelector('.token-supply-pie__hub')?.remove();
 }
 
-function mountTradeTierPieCenterHub(pieEl: HTMLElement, options: { mock: boolean; totalTrades: number }): void {
+function mountDonutPieCenterHub(pieEl: HTMLElement, options: { mock: boolean; hubSubline: string }): void {
   pieEl.querySelector('.token-supply-pie__hub')?.remove();
   const hub = document.createElement('div');
   hub.className = 'token-supply-pie__hub';
@@ -2522,7 +2637,7 @@ function mountTradeTierPieCenterHub(pieEl: HTMLElement, options: { mock: boolean
   pctEl.textContent = options.mock ? '—' : '100%';
   const subEl = document.createElement('div');
   subEl.className = 'token-supply-pie__hub-sub';
-  subEl.textContent = options.mock ? '—' : formatTradeTierCenterTradesSubtitle(options.totalTrades);
+  subEl.textContent = options.hubSubline;
   hub.appendChild(pctEl);
   hub.appendChild(subEl);
   pieEl.appendChild(hub);
@@ -2691,8 +2806,8 @@ function computeTradeTierPieLabelLayout(cands: TierPieLabelCand[]): {
 }
 
 /** Slice labels: inside the ring when arc fits the string; otherwise outside with leaders. */
-function mountTradeTierPieLabelOverlay(pieEl: HTMLElement, slicePcts: number[], sliceColors: string[]): void {
-  clearTradeTierPieLabelOverlay(pieEl);
+function mountDonutPieSliceLabelOverlay(pieEl: HTMLElement, slicePcts: number[], sliceColors: string[]): void {
+  clearDonutPieOverlays(pieEl);
   const mids = tradeTierPieSliceMidAnglesDeg(slicePcts, PIE_CONIC_GAP_DEG);
   const spans = tradeTierPieSliceSpanDeg(slicePcts, PIE_CONIC_GAP_DEG);
   const cx = 50;
@@ -2778,14 +2893,14 @@ function mountTradeTierPieLabelOverlay(pieEl: HTMLElement, slicePcts: number[], 
   if (svg.childNodes.length > 0) pieEl.appendChild(svg);
 }
 
-function mountTradeTierPieOverlays(
+function mountDonutPieOverlays(
   pieEl: HTMLElement,
   slicePcts: number[],
   sliceColors: string[],
-  hub: { mock: boolean; totalTrades: number }
+  hub: { mock: boolean; hubSubline: string }
 ): void {
-  mountTradeTierPieLabelOverlay(pieEl, slicePcts, sliceColors);
-  mountTradeTierPieCenterHub(pieEl, hub);
+  mountDonutPieSliceLabelOverlay(pieEl, slicePcts, sliceColors);
+  mountDonutPieCenterHub(pieEl, hub);
 }
 
 function applyMaxPnlGroups(
@@ -3182,7 +3297,7 @@ function tradeTierIndexForTraderCount(tRaw: number, def: TradeTierDefinitions): 
 
 /**
  * Pie slice angle ∝ sum of each trader’s `tradesCount` in that tier (share of total trades, not share of traders).
- * Only rows with positive ROI % are included. Legend lines 3–4 are traders / realized in that tier.
+ * Only rows with positive RoV % are included. Legend lines 3–4 are traders / realized in that tier.
  */
 function renderProfitableTradersTradeTierPie(
   rows: TokenTopPnlTraderRow[],
@@ -3199,8 +3314,8 @@ function renderProfitableTradersTradeTierPie(
 
   if (profitable.length === 0) {
     pie.style.background = buildPieGradientWithGaps([1], ['#27272a']);
-    clearTradeTierPieLabelOverlay(pie);
-    mountTradeTierPieCenterHub(pie, { mock: true, totalTrades: 0 });
+    clearDonutPieOverlays(pie);
+    mountDonutPieCenterHub(pie, { mock: true, hubSubline: '—' });
     legend.innerHTML =
       `<div class="token-supply-legend-item"><div class="token-supply-legend-content"><div class="token-supply-legend-label">No profitable traders in top ${limitN} list</div></div></div>`;
     if (tokenTradeTierInsightText) tokenTradeTierInsightText.textContent = '—';
@@ -3210,8 +3325,8 @@ function renderProfitableTradersTradeTierPie(
   const tierDef = buildProfitableTradersTradeTierPieDefinitions(rows, limitN);
   if (!tierDef || tierDef.tiers.length === 0) {
     pie.style.background = buildPieGradientWithGaps([1], ['#27272a']);
-    clearTradeTierPieLabelOverlay(pie);
-    mountTradeTierPieCenterHub(pie, { mock: true, totalTrades: 0 });
+    clearDonutPieOverlays(pie);
+    mountDonutPieCenterHub(pie, { mock: true, hubSubline: '—' });
     legend.innerHTML =
       '<div class="token-supply-legend-item"><div class="token-supply-legend-content"><div class="token-supply-legend-label">No trade-count tiers for profitable traders</div></div></div>';
     if (tokenTradeTierInsightText) tokenTradeTierInsightText.textContent = '—';
@@ -3241,8 +3356,8 @@ function renderProfitableTradersTradeTierPie(
   const totalW = weightByTier.reduce((a, b) => a + b, 0);
   if (totalW <= 0) {
     pie.style.background = buildPieGradientWithGaps([1], ['#27272a']);
-    clearTradeTierPieLabelOverlay(pie);
-    mountTradeTierPieCenterHub(pie, { mock: true, totalTrades: 0 });
+    clearDonutPieOverlays(pie);
+    mountDonutPieCenterHub(pie, { mock: true, hubSubline: '—' });
     legend.innerHTML =
       '<div class="token-supply-legend-item"><div class="token-supply-legend-content"><div class="token-supply-legend-label">No trades for profitable traders</div></div></div>';
     if (tokenTradeTierInsightText) tokenTradeTierInsightText.textContent = '—';
@@ -3257,7 +3372,10 @@ function renderProfitableTradersTradeTierPie(
   /* Outside labels remove the need to inflate tiny wedges; keep angles = true shares so % matches arc size. */
   const segColors = weightByTier.map((_, i) => colors[i % colors.length]);
   pie.style.background = buildPieGradientWithGaps(slicePcts, segColors);
-  mountTradeTierPieOverlays(pie, slicePcts, segColors, { mock: false, totalTrades: totalW });
+  mountDonutPieOverlays(pie, slicePcts, segColors, {
+    mock: false,
+    hubSubline: formatTradeTierCenterTradesSubtitle(totalW),
+  });
 
   const tierSortKey = (idx: number): number => {
     if (tierDef.zeroCount > 0 && idx === tierDef.tiers.length) return -1;
@@ -3331,24 +3449,28 @@ function renderTopTraderRoiBandPie(rows: TokenTopPnlTraderRow[], target: { pie: 
   const coarseColors = TOKEN_TRADER_ROI_VOLUME_BANDS.map((b) => b.color);
   if (totalWeight <= 0) {
     pie.style.background = buildPieGradientWithGaps([1], ['#27272a']);
+    clearDonutPieOverlays(pie);
     const lim = getTokenTopPnlLimitDisplay();
     legend.innerHTML =
       `<div class="token-supply-legend-item"><div class="token-supply-legend-content"><div class="token-supply-legend-label">No volume in top ${lim} list</div></div></div>`;
+    mountDonutPieCenterHub(pie, { mock: true, hubSubline: '—' });
     return;
   }
+
+  const hubLine = `${formatUsdFull(totalWeight)} volume`;
 
   const nonEmptyCoarse = weightByBand.filter((v) => v > 0).length;
 
   const renderCoarseBands = (): void => {
     const slicePcts = weightByBand.map((v) => (v / totalWeight) * 100);
-    const displaySlices = applyMinVisibleSlices(slicePcts);
-    pie.style.background = buildPieGradientWithGaps(displaySlices, coarseColors);
+    pie.style.background = buildPieGradientWithGaps(slicePcts, coarseColors);
     legend.innerHTML = TOKEN_TRADER_ROI_VOLUME_BANDS.map((def, i) => {
       const w = weightByBand[i];
       const pct = slicePcts[i];
       if (w <= 0) return '';
       return renderPieLegendRow(def.label, pct, formatUsdFull(w), def.color);
     }).join('');
+    mountDonutPieOverlays(pie, slicePcts, coarseColors, { mock: false, hubSubline: hubLine });
   };
 
   if (nonEmptyCoarse >= MIN_ROI_PIE_SEGMENTS) {
@@ -3387,7 +3509,7 @@ function renderTopTraderRoiBandPie(rows: TokenTopPnlTraderRow[], target: { pie: 
   const segments: { label: string; color: string; weight: number }[] = [];
   for (let i = 0; i < k; i++) {
     segments.push({
-      label: `Between ${formatRoiSpan(binLo[i], binHi[i])} PnL`,
+      label: `Between ${formatRoiSpan(binLo[i], binHi[i])} RoV`,
       color: ROI_EQUAL_COUNT_BIN_COLORS[i],
       weight: binWeight[i] ?? 0,
     });
@@ -3395,9 +3517,8 @@ function renderTopTraderRoiBandPie(rows: TokenTopPnlTraderRow[], target: { pie: 
 
   const segTotal = segments.reduce((s, x) => s + x.weight, 0);
   const slicePcts = segments.map((s) => (s.weight / segTotal) * 100);
-  const displaySlices = applyMinVisibleSlices(slicePcts);
   const segColors = segments.map((s) => s.color);
-  pie.style.background = buildPieGradientWithGaps(displaySlices, segColors);
+  pie.style.background = buildPieGradientWithGaps(slicePcts, segColors);
   legend.innerHTML = segments
     .map((seg, i) => {
       if (seg.weight <= 0) return '';
@@ -3409,6 +3530,7 @@ function renderTopTraderRoiBandPie(rows: TokenTopPnlTraderRow[], target: { pie: 
       );
     })
     .join('');
+  mountDonutPieOverlays(pie, slicePcts, segColors, { mock: false, hubSubline: hubLine });
 }
 
 function renderTradesCountDistributionVerticalBars(
@@ -3492,6 +3614,8 @@ async function loadData(): Promise<void> {
         tokenLogo.style.display = 'none';
         tokenSymbol.textContent = '—';
         tokenName.textContent = '—';
+        tokenName.removeAttribute('title');
+        tokenLastUpdatedValue.textContent = '—';
         tokenStats.innerHTML = buildTokenStatsPlaceholderHtml();
       }
       const tokenTopPnlRes = await fetchWithRetry(`/api/tokens/${encodeURIComponent(query)}/top-pnl-traders?${tokenTopPnlParams.toString()}`);
