@@ -1871,7 +1871,7 @@ button:active {
 
 /* Profitable traders by volume: wider pie column only on this card (chart + legend). */
 .token-supply-card--volume-pnl-pie .token-trade-tier-dash__main {
-  grid-template-columns: minmax(200px, 460px) 1fr;
+  grid-template-columns: minmax(200px, 440px) 1fr;
 }
 
 /* Trades-count & PnL distribution vertical bars: full-width rows inside dash cards. */

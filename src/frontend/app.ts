@@ -2222,13 +2222,13 @@ function renderPieLegendVolumePnlCard(
   </div>`;
 }
 
-function renderPieLegendVolumePnlCardPlaceholder(label: string, fill: PieSliceSpec): string {
+function renderPieLegendVolumePnlCardPlaceholder(fill: PieSliceSpec): string {
   const dash = '—';
   const accent = pieSliceAccentSolid(fill);
   const swatchBg = pieSliceLegendBackground(fill);
   return `<div class="token-supply-legend-item token-supply-legend-item--tier-dashboard">
     <article class="token-tier-card token-tier-card--placeholder" style="--tier-accent:${accent}">
-      <h4 class="token-tier-card__title">${escapeHtmlText(label)}</h4>
+      <h4 class="token-tier-card__title">${dash}</h4>
       <ul class="token-tier-card__metrics">
         <li class="token-tier-metric"><span class="token-tier-metric__ico token-tier-metric__ico--share-swatch" style="--tier-swatch:${swatchBg}" aria-hidden="true"></span><div class="token-tier-metric__body"><span class="token-tier-metric__muted">${dash}</span></div></li>
         <li class="token-tier-metric"><span class="token-tier-metric__ico token-tier-metric__ico--usd" aria-hidden="true">$</span><div class="token-tier-metric__body"><span class="token-tier-metric__muted">${dash}</span></div></li>
@@ -2321,8 +2321,8 @@ function applyTokenModeChartsPlaceholder(): void {
     new Array(VOLUME_PNL_PIE_MERGED_USD_BANDS.length).fill(0),
     [...VOLUME_PNL_PIE_MERGED_SLICE_FILLS]
   );
-  tokenSupplyLegendTotal.innerHTML = VOLUME_PNL_PIE_MERGED_USD_BANDS.map((b, i) =>
-    renderPieLegendVolumePnlCardPlaceholder(b.label, VOLUME_PNL_PIE_MERGED_SLICE_FILLS[i] ?? '#27272a')
+  tokenSupplyLegendTotal.innerHTML = VOLUME_PNL_PIE_MERGED_USD_BANDS.map((_, i) =>
+    renderPieLegendVolumePnlCardPlaceholder(VOLUME_PNL_PIE_MERGED_SLICE_FILLS[i] ?? '#27272a')
   ).join('');
   clearDonutPieOverlays(tokenSupplyPieTotal);
   mountDonutPieCenterHub(tokenSupplyPieTotal, { mock: true, hubSubline: '—' });
