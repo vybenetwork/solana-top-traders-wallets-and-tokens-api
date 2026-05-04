@@ -92,10 +92,25 @@ function tradeScaleBarGradientPair(t: number): { dark: string; light: string } {
   };
 }
 
+/** Hue sweep green → yellow (same as `.token-pnl-bar-fill--trade-scale-pnl-dist`, not full green→red). */
+function pnlDistScaleHue(t: number): number {
+  const clamped = Math.min(1, Math.max(0, t));
+  return 120 - clamped * 60;
+}
+
+/** Volume-by-PnL donut positive slices only; matches PnL distribution bar fills. */
+function pnlDistBarGradientPair(t: number): { dark: string; light: string } {
+  const h = pnlDistScaleHue(t);
+  return {
+    dark: `hsl(${h} 85% 42%)`,
+    light: `hsl(${h} 92% 60%)`,
+  };
+}
+
 const _volumePnlMergedBandCount = VOLUME_PNL_PIE_MERGED_USD_BANDS.length;
-/** Donut slices: same per-row gradient as trade-count bars (`--trade-scale`). */
+/** Share-of-volume donut: high-PnL bands → green, low positive → yellow; at/below $0 slice uses {@link VOLUME_PNL_PIE_NONPOSITIVE_FILL}. */
 const VOLUME_PNL_PIE_MERGED_SLICE_FILLS: readonly PieSliceSpec[] = Array.from({ length: _volumePnlMergedBandCount }, (_, i) =>
-  _volumePnlMergedBandCount <= 1 ? tradeScaleBarGradientPair(0) : tradeScaleBarGradientPair(i / (_volumePnlMergedBandCount - 1))
+  _volumePnlMergedBandCount <= 1 ? pnlDistBarGradientPair(0) : pnlDistBarGradientPair(i / (_volumePnlMergedBandCount - 1))
 );
 
 function volumePnlPieMergedBandIndex(pnl: number): number | null {
