@@ -1999,12 +1999,12 @@ button:active {
   );
 }
 
-/* PnL distribution bars only: green → yellow at low-positive-PnL end (hue 60°). Same saturation/lightness stops as trade-scale. */
+/* PnL distribution: green (high PnL) → light yellowish orange at low-positive end (~hue 43°). Span 77 must match app.ts PNL_DIST_HUE_SPAN. */
 .token-pnl-bar-fill--trade-scale-pnl-dist {
   background: linear-gradient(
     90deg,
-    hsl(calc(120 - (var(--trade-grad-t, 0) * 60)) 85% 42%),
-    hsl(calc(120 - (var(--trade-grad-t, 0) * 60)) 92% 60%)
+    hsl(calc(120 - (var(--trade-grad-t, 0) * 77)) 85% 42%),
+    hsl(calc(120 - (var(--trade-grad-t, 0) * 77)) 92% 60%)
   );
 }
 
@@ -2089,7 +2089,7 @@ button:active {
 
 /* PnL distribution: label + count match bar hue (--trade-grad-t same as fill); black outline for contrast. */
 .token-trades-vertical-label.token-pnl-dist-band-text {
-  color: hsl(calc(120 - (var(--trade-grad-t, 0) * 60)) 88% 54%);
+  color: hsl(calc(120 - (var(--trade-grad-t, 0) * 77)) 88% 56%);
   text-shadow:
     -1px -1px 0 #0a0a0a,
     1px -1px 0 #0a0a0a,

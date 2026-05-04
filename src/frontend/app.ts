@@ -92,13 +92,17 @@ function tradeScaleBarGradientPair(t: number): { dark: string; light: string } {
   };
 }
 
-/** Hue sweep green → yellow (same as `.token-pnl-bar-fill--trade-scale-pnl-dist`, not full green→red). */
+/** Low-positive PnL end of sweep (yellowish orange); high PnL → green (120°). Must match CSS `--trade-grad-t` span. */
+const PNL_DIST_HUE_GREEN = 120;
+const PNL_DIST_HUE_LOW_POSITIVE = 43;
+const PNL_DIST_HUE_SPAN = PNL_DIST_HUE_GREEN - PNL_DIST_HUE_LOW_POSITIVE;
+
 function pnlDistScaleHue(t: number): number {
   const clamped = Math.min(1, Math.max(0, t));
-  return 120 - clamped * 60;
+  return PNL_DIST_HUE_GREEN - clamped * PNL_DIST_HUE_SPAN;
 }
 
-/** Volume-by-PnL donut positive slices only; matches PnL distribution bar fills. */
+/** Volume pie positive bands: same two-stop ramp as PnL dist bars (green → light yellowish orange). */
 function pnlDistBarGradientPair(t: number): { dark: string; light: string } {
   const h = pnlDistScaleHue(t);
   return {
