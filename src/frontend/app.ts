@@ -1172,7 +1172,7 @@ function mountWalletPieDonutOverlays(
       return;
     }
     pie.style.background = buildPieGradientWithGaps(norm.pctSlices, norm.fills);
-    mountDonutPieOverlays(pie, norm.pctSlices, norm.fills, null);
+    mountDonutPieOverlays(pie, norm.pctSlices, norm.fills, null, { showSliceLabels: false });
   });
 }
 
@@ -3359,9 +3359,14 @@ function mountDonutPieOverlays(
   pieEl: HTMLElement,
   slicePcts: number[],
   sliceSpecs: PieSliceSpec[],
-  hub: { mock: boolean; hubSubline: string } | null
+  hub: { mock: boolean; hubSubline: string } | null,
+  opts?: { showSliceLabels?: boolean }
 ): void {
-  mountDonutPieSliceLabelOverlay(pieEl, slicePcts, sliceSpecs);
+  if (opts?.showSliceLabels !== false) {
+    mountDonutPieSliceLabelOverlay(pieEl, slicePcts, sliceSpecs);
+  } else {
+    pieEl.querySelector('.token-supply-pie__label-svg')?.remove();
+  }
   if (hub) {
     mountDonutPieCenterHub(pieEl, hub);
   } else {

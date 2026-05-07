@@ -2557,7 +2557,7 @@ button:active {
 
 .wallet-pnl-layout {
   display: grid;
-  grid-template-columns: 1fr minmax(300px, 400px);
+  grid-template-columns: 2fr minmax(300px, 380px);
   gap: 1.1rem;
   align-items: stretch;
 }
