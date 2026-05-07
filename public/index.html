@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wallet PnL · Vybe</title>
-  <link rel="stylesheet" href="app.css?v=221" />
+  <link rel="stylesheet" href="app.css?v=225" />
 </head>
 <body>
   <div class="container">
@@ -21,8 +21,16 @@
     </header>
 
     <section class="inputs panel">
+      <div id="realtimeExclusiveSurface">
+      <div class="section-header">
+        <h2 class="token-stats-group-title">Remote filters</h2>
+      </div>
+      <p class="remote-filters-help wallet-pnl-pnl-trading-lede">
+        <strong>Remote filters</strong> map directly to Vybe query params for wallet PnL and the related-wallets leaderboard.
+      </p>
+
       <div class="candles-mint-resolution-row remote-top-row inputs-endpoint-mode-bar" id="endpointModeBar">
-        <div class="field endpoint-mode-field site-header__endpoint">
+        <div class="field endpoint-mode-field site-header__endpoint" id="endpointModeField">
           <label class="site-header__endpoint-label">Endpoint mode</label>
           <div class="trades-fetch-control">
             <button type="button" class="trades-fetch-lock" id="endpointModeLock" title="Lock current endpoint mode" aria-pressed="false" aria-label="Lock mode switch">
@@ -38,17 +46,6 @@
             </label>
           </div>
         </div>
-      </div>
-
-      <div id="realtimeExclusiveSurface">
-      <div class="section-header">
-        <h2 class="token-stats-group-title">Remote filters</h2>
-      </div>
-      <p class="remote-filters-help wallet-pnl-pnl-trading-lede">
-        <strong>Remote filters</strong> map directly to Vybe query params for wallet PnL and the related-wallets leaderboard.
-      </p>
-
-      <div class="candles-mint-resolution-row remote-top-row">
         <div class="field mint-query-field">
           <label for="mint" id="searchInputLabel">
             <span class="label-icon field-icon icon-user" aria-hidden="true"></span>
@@ -475,6 +472,6 @@
     </select>
   </div>
 
-  <script src="app.js?v=222"></script>
+  <script src="app.js?v=224"></script>
 </body>
 </html>

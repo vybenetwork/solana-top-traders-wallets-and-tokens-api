@@ -134,8 +134,11 @@ body {
 }
 
 .inputs.panel {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
   gap: 0.85rem;
-  align-items: flex-end;
   padding: 1.1rem 1.15rem 1.15rem 1.35rem;
   border-radius: 12px;
   border: 1px solid var(--vybe-border);
@@ -198,7 +201,7 @@ body {
 #mint {
   min-width: 0;
   width: 100%;
-  max-width: 100%;
+  max-width: 442px;
 }
 
 #walletLabel,
@@ -3604,9 +3607,9 @@ html {
   border-radius: 999px;
 }
 
-/* Endpoint bar stays visible in historical mode so users can switch back */
+/* Endpoint + wallet row: keep tight to filters block (no extra strip margin) */
 .inputs-endpoint-mode-bar {
-  margin-bottom: 1rem;
+  margin-bottom: 0;
 }
 
 .construction-callout {
@@ -3625,6 +3628,11 @@ html {
 }
 
 /* Endpoint mode: lock + realtime/historical, inline left of wallet search */
+.endpoint-mode-field.endpoint-mode-switcher-disabled,
+.endpoint-mode-field.endpoint-mode-switcher-disabled * {
+  cursor: not-allowed;
+}
+
 .site-header__endpoint-label {
   display: block;
   font-size: 0.75rem;

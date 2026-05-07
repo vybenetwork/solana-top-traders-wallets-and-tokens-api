@@ -272,6 +272,7 @@ const tokenTopPnlTradesHeader = document.getElementById('tokenTopPnlTradesHeader
 const tokenTopPnl24hTradesHeader = document.getElementById('tokenTopPnl24hTradesHeader') as HTMLElement;
 
 type EndpointMode = 'realtime' | 'historical';
+const endpointModeField = document.getElementById('endpointModeField') as HTMLElement;
 const endpointModeLock = document.getElementById('endpointModeLock') as HTMLButtonElement;
 const endpointModeHistorical = document.getElementById('endpointModeHistorical') as HTMLInputElement;
 const endpointModeSwitchLabel = document.getElementById('endpointModeSwitchLabel') as HTMLElement;
@@ -291,6 +292,9 @@ const HIST_RES_STORAGE_KEY = 'walletPnlHistResolution';
 
 /** When true, historical PnL timeseries UI is disabled and requests are not sent. */
 const HISTORICAL_WALLET_PNL_UNDER_CONSTRUCTION = true;
+
+/** When true, Realtime/Historical toggle and lock are inactive (historical UI deferred). */
+const ENDPOINT_HISTORICAL_SWITCHER_DISABLED = true;
 
 const SEARCH_MODE_KEY = 'topTradersSearchMode';
 const MAX_FETCH_RETRIES = 5;
@@ -393,11 +397,13 @@ function initSearchModeFromUrlParams(): void {
 }
 
 function getEndpointMode(): EndpointMode {
+  if (ENDPOINT_HISTORICAL_SWITCHER_DISABLED) return 'realtime';
   const stored = localStorage.getItem(MODE_STORAGE_KEY);
   return stored === 'historical' ? 'historical' : 'realtime';
 }
 
 function setEndpointMode(mode: EndpointMode): void {
+  if (ENDPOINT_HISTORICAL_SWITCHER_DISABLED && mode === 'historical') return;
   localStorage.setItem(MODE_STORAGE_KEY, mode);
 }
 
@@ -467,10 +473,19 @@ function applyEndpointModeUI(): void {
 
   endpointModeHistorical.checked = historical;
   endpointModeLock.setAttribute('aria-pressed', String(locked));
-  endpointModeSwitchLabel.classList.toggle('trades-fetch-switch--locked', locked);
-  endpointModeSwitchLabel.title = locked
-    ? 'Locked: mode is fixed. Unlock to switch realtime/historical.'
-    : 'Switch between Realtime (wallet PnL + related wallets) and Historical (PnL timeseries — under construction).';
+  endpointModeSwitchLabel.classList.toggle('trades-fetch-switch--locked', locked && !ENDPOINT_HISTORICAL_SWITCHER_DISABLED);
+  endpointModeField.classList.toggle('endpoint-mode-switcher-disabled', ENDPOINT_HISTORICAL_SWITCHER_DISABLED);
+  endpointModeHistorical.disabled = ENDPOINT_HISTORICAL_SWITCHER_DISABLED;
+  endpointModeLock.disabled = ENDPOINT_HISTORICAL_SWITCHER_DISABLED;
+  if (ENDPOINT_HISTORICAL_SWITCHER_DISABLED) {
+    endpointModeSwitchLabel.title = 'Historical mode is unavailable until that section is ready.';
+    endpointModeLock.title = 'Historical mode is unavailable until that section is ready.';
+  } else {
+    endpointModeSwitchLabel.title = locked
+      ? 'Locked: mode is fixed. Unlock to switch realtime/historical.'
+      : 'Switch between Realtime (wallet PnL + related wallets) and Historical (PnL timeseries — under construction).';
+    endpointModeLock.title = 'Lock current endpoint mode';
+  }
 
   applySearchModeUI();
 }
@@ -573,8 +588,8 @@ function applySearchModeUI(): void {
   tokenSupplyPanelTotal.hidden = true;
   tokenTopPnlSection.hidden = true;
   topTradersSection.hidden = getEndpointMode() === 'historical';
-  walletActionsTarget.appendChild(fetchActions);
-  walletLoadingSlot.appendChild(loadingIndicator);
+  if (fetchActions.parentElement !== walletActionsTarget) walletActionsTarget.appendChild(fetchActions);
+  if (loadingIndicator.parentElement !== walletLoadingSlot) walletLoadingSlot.appendChild(loadingIndicator);
   document
     .querySelectorAll<HTMLElement>('.wallet-only-control, .wallet-only-row')
     .forEach((el) => {
@@ -4146,11 +4161,16 @@ async function loadData(): Promise<void> {
 }
 
 endpointModeLock.addEventListener('click', () => {
+  if (ENDPOINT_HISTORICAL_SWITCHER_DISABLED) return;
   setEndpointModeLocked(!isEndpointModeLocked());
   applyEndpointModeUI();
 });
 
 endpointModeHistorical.addEventListener('change', () => {
+  if (ENDPOINT_HISTORICAL_SWITCHER_DISABLED) {
+    endpointModeHistorical.checked = false;
+    return;
+  }
   if (isEndpointModeLocked()) {
     endpointModeHistorical.checked = getEndpointMode() === 'historical';
     return;
