@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wallet PnL · Vybe</title>
-  <link rel="stylesheet" href="app.css?v=225" />
+  <link rel="stylesheet" href="app.css?v=230" />
 </head>
 <body>
   <div class="container">
@@ -31,17 +31,22 @@
 
       <div class="candles-mint-resolution-row remote-top-row inputs-endpoint-mode-bar" id="endpointModeBar">
         <div class="field endpoint-mode-field site-header__endpoint" id="endpointModeField">
-          <label class="site-header__endpoint-label">Endpoint mode</label>
+          <label class="site-header__endpoint-label" for="endpointModeHistorical">
+            <span class="label-icon field-icon icon-grid" aria-hidden="true"></span>
+            Endpoint mode
+          </label>
           <div class="trades-fetch-control">
-            <button type="button" class="trades-fetch-lock" id="endpointModeLock" title="Lock current endpoint mode" aria-pressed="false" aria-label="Lock mode switch">
-              <svg class="trades-fetch-lock-icon trades-fetch-lock-icon--locked" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z"></path><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-              <svg class="trades-fetch-lock-icon trades-fetch-lock-icon--unlocked" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z"></path><path d="M7 11V7a5 5 0 0 1 5.5-5 5 5 0 0 1 4.5 3"></path></svg>
-            </button>
             <label class="trades-fetch-switch" id="endpointModeSwitchLabel" title="Switch between Realtime (wallet PnL + related wallets) and Historical (PnL timeseries — under construction).">
               <input type="checkbox" id="endpointModeHistorical" class="trades-fetch-switch-input" />
               <span class="trades-fetch-switch-track">
-                <span class="trades-fetch-switch-option" data-value="single">Realtime</span>
-                <span class="trades-fetch-switch-option" data-value="paged">Historical</span>
+                <span class="trades-fetch-switch-option" data-value="single">
+                  <svg class="endpoint-mode-switch-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
+                  Realtime
+                </span>
+                <span class="trades-fetch-switch-option" data-value="paged">
+                  <svg class="endpoint-mode-switch-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
+                  Historical
+                </span>
               </span>
             </label>
           </div>
@@ -472,6 +477,6 @@
     </select>
   </div>
 
-  <script src="app.js?v=224"></script>
+  <script src="app.js?v=225"></script>
 </body>
 </html>

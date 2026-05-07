@@ -206,9 +206,7 @@ body {
 
 #walletLabel,
 #walletSortDirection,
-#walletPnlSortField,
 #tokenTopPnlResolution,
-#tokenTopPnlSortField,
 #tokenTopPnlSortDirection {
   min-width: 180px;
 }
@@ -236,9 +234,9 @@ body {
 
 #walletPnlSortField,
 #tokenTopPnlSortField {
-  width: 172px;
-  min-width: 172px;
-  max-width: 172px;
+  width: 156px;
+  min-width: 156px;
+  max-width: 156px;
 }
 
 #walletSortDirection,
@@ -493,73 +491,6 @@ body {
   min-width: 88px;
 }
 
-.trades-fetch-lock {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 1.85rem;
-  padding: 0;
-  border: 1px solid #3f3f46;
-  border-radius: 6px;
-  background: #18181b;
-  color: #a1a1aa;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
-}
-
-.trades-fetch-lock[aria-pressed="true"] {
-  background: #ca8a04;
-  color: #1c1917;
-  border-color: #a16207;
-}
-
-.trades-fetch-lock[aria-pressed="false"] {
-  background: #90ee90;
-  color: #1e6b1e;
-  border-color: #6bc96b;
-}
-
-.trades-fetch-lock[aria-pressed="false"]:not(.trades-fetch-lock--no-hover):hover {
-  background: #ca8a04;
-  color: #1c1917;
-  border-color: #a16207;
-}
-
-.trades-fetch-lock[aria-pressed="false"]:not(.trades-fetch-lock--no-hover):hover .trades-fetch-lock-icon--locked {
-  display: block !important;
-}
-
-.trades-fetch-lock[aria-pressed="false"]:not(.trades-fetch-lock--no-hover):hover .trades-fetch-lock-icon--unlocked {
-  display: none !important;
-}
-
-.trades-fetch-lock[aria-pressed="true"]:not(.trades-fetch-lock--no-hover):hover {
-  background: #90ee90;
-  color: #1e6b1e;
-  border-color: #6bc96b;
-}
-
-.trades-fetch-lock[aria-pressed="true"]:not(.trades-fetch-lock--no-hover):hover .trades-fetch-lock-icon--locked {
-  display: none;
-}
-
-.trades-fetch-lock[aria-pressed="true"]:not(.trades-fetch-lock--no-hover):hover .trades-fetch-lock-icon--unlocked {
-  display: block !important;
-}
-
-.trades-fetch-lock[aria-pressed="false"] .trades-fetch-lock-icon--locked {
-  display: none;
-}
-
-.trades-fetch-lock[aria-pressed="false"] .trades-fetch-lock-icon--unlocked {
-  display: block !important;
-}
-
-.trades-fetch-lock-icon--unlocked {
-  display: none;
-}
-
 .trades-fetch-switch {
   display: inline-flex;
   cursor: pointer;
@@ -582,7 +513,7 @@ body {
   background: #27272a;
   border: 1px solid #3f3f46;
   position: relative;
-  min-width: 7.5rem;
+  min-width: 9.25rem;
 }
 
 .trades-fetch-switch-track::after {
@@ -604,7 +535,13 @@ body {
 }
 
 .trades-fetch-switch-option {
+  display: inline-flex;
   flex: 1;
+  padding-left: 8px;
+  padding-right: 8px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
   text-align: center;
   font-size: 0.75rem;
   font-weight: 500;
@@ -613,17 +550,17 @@ body {
   transition: color 0.2s;
 }
 
+.endpoint-mode-switch-icon {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
 .trades-fetch-switch-input:not(:checked) + .trades-fetch-switch-track .trades-fetch-switch-option[data-value="single"] {
   color: #e4e4e7;
 }
 
 .trades-fetch-switch-input:checked + .trades-fetch-switch-track .trades-fetch-switch-option[data-value="paged"] {
   color: #e4e4e7;
-}
-
-.trades-fetch-switch.trades-fetch-switch--locked {
-  pointer-events: none;
-  opacity: 0.85;
 }
 
 .section-loading {
@@ -639,6 +576,18 @@ body {
 
 .section-loading[hidden] {
   display: none !important;
+}
+
+.section-header .section-loading {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  align-self: center;
+}
+
+.section-header .section-error {
+  margin: 0;
+  align-self: center;
 }
 
 .section-error {
@@ -3607,9 +3556,8 @@ html {
   border-radius: 999px;
 }
 
-/* Endpoint + wallet row: keep tight to filters block (no extra strip margin) */
 .inputs-endpoint-mode-bar {
-  margin-bottom: 0;
+  margin-bottom: 10px;
 }
 
 .construction-callout {
@@ -3634,11 +3582,14 @@ html {
 }
 
 .site-header__endpoint-label {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 0.35rem;
-  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #a1a1aa;
+  text-transform: none;
+  letter-spacing: normal;
+  opacity: 1;
 }
