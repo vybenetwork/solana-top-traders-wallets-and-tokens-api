@@ -4,15 +4,11 @@ This repository demonstrates how to use Vybe’s Solana Top Traders and Trades A
 
 Try the live demo: https://solana-top-traders-wallets-and-tokens-api.vybenetwork.com
 
-Use this project as a reference implementation or starter kit for building Solana trader discovery tools, wallet intelligence dashboards, and PnL/flow analysis products powered by Vybe’s high-performance Solana data APIs.
+![Wallet PnL demo](screenshots/solana-top-traders-wallets-and-tokens-api.png)
 
-![Solana Top Traders Wallets & Tokens API](screenshots/solana-top-traders-wallets-and-tokens-api.png)
+## Historical mode
 
-<p align="center">
-  <img src="screenshots/top-traders-token-mode-solana-api.png" alt="Top traders by token" width="260" style="min-width:260px;max-width:260px;margin-right:10px;" />
-  <img src="screenshots/top-traders-wallet-mode-solana-api.png" alt="Top traders by wallet" width="224" style="min-width:224px;max-width:224px;margin-right:10px;" />
-  <img src="screenshots/top-traders-solana-leaderboard-api.png" alt="Top traders leaderboard" width="260" style="min-width:260px;max-width:260px;" />
-</p>
+**Historical wallet PnL timeseries** (PnL over time buckets) is **under construction** in the UI. Use **Realtime** for the working flow. The backend may still expose `/api/wallets/:owner/pnl-ts` for experiments; the in-app historical tab is disabled until the feature is finished.
 
 ---
 
@@ -29,7 +25,7 @@ Use this project as a reference implementation or starter kit for building Solan
 - **Node.js** ≥ 20 (LTS recommended)
 - **npm** ≥ 10 (or equivalent)
 
-## Quick Start
+## Quick start
 
 Get from clone to running app in a few commands:
 
@@ -44,7 +40,7 @@ npm start
 
 Then open **http://localhost:3000**, choose **token mode** or **wallet mode**, and click **Load** to fetch results.
 
-## Environment Variables
+## Environment variables
 
 | Variable         | Required | Description                                                     | Example                                |
 |------------------|----------|-----------------------------------------------------------------|----------------------------------------|
@@ -208,7 +204,7 @@ TUNNEL=1 npm start
 
 ---
 
-## Project Structure
+## Project structure
 
 ```text
 solana-top-traders-wallets-and-tokens-api/
@@ -249,4 +245,3 @@ solana-top-traders-wallets-and-tokens-api/
 
 - **Telegram:** [Vybe community](https://t.me/vybenetwork)
 - **Support ticket:** [Submit a ticket](https://vybenetwork.com)
-
