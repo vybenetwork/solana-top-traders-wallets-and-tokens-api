@@ -201,6 +201,7 @@ const tokenFetchSlot = document.getElementById('tokenFetchSlot') as HTMLElement;
 const tokenLoadingSlot = document.getElementById('tokenLoadingSlot') as HTMLElement;
 const walletLoadingSlot = document.getElementById('walletLoadingSlot') as HTMLElement;
 const fetchAllBtn = document.getElementById('fetchAll') as HTMLButtonElement;
+const fetchAllBtnText = document.getElementById('fetchAllBtnText') as HTMLElement | null;
 const loadingIndicator = document.getElementById('loadingIndicator') as HTMLElement;
 const tokenOnlyControls = document.getElementById('tokenOnlyControls') as HTMLElement;
 const walletLabelField = document.getElementById('walletLabelField') as HTMLElement;
@@ -410,7 +411,9 @@ function applySearchModeUI(): void {
   ) {
     mintInput.value = tokenMode ? DEMO_MINT : DEMO_WALLET;
   }
-  fetchAllBtn.textContent = tokenMode ? 'Load token analytics' : 'Search top traders';
+  const fetchLabel = tokenMode ? 'Load token analytics' : 'Search top traders';
+  if (fetchAllBtnText) fetchAllBtnText.textContent = fetchLabel;
+  else fetchAllBtn.textContent = fetchLabel;
   tokenSection.hidden = !tokenMode;
   tokenSupplyPanelTotal.hidden = !tokenMode;
   topTradersSection.hidden = tokenMode;
@@ -3954,6 +3957,7 @@ searchModeWallet.addEventListener('change', () => {
 });
 
 fetchAllBtn.addEventListener('click', () => {
+  fetchAllBtn.classList.remove('fetch-btn-attention');
   void loadData();
 });
 
