@@ -978,13 +978,15 @@ header h1 {
 .panel .section-header h2,
 .section-header h2.section-header__title {
   margin: 0;
-  line-height: 1.25;
-  height: auto;
+  line-height: 40px;
+  height: 40px;
 }
 
 .section-header .section-loading,
 .section-header .section-error,
 .section-header .section-warning {
+  margin: 0 0 0 6px;
+  max-height: 30px;
   align-self: center;
   flex-shrink: 1;
   min-width: 0;
@@ -1008,7 +1010,9 @@ header h1 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-height: 40px;
+  min-width: 0;
 }
 
 .trades-fetch-control {
