@@ -2307,9 +2307,11 @@ function renderTokenTopPnlTraders(
     .filter((value) => Number.isFinite(value));
   const trades24hMin = trades24hValues.length ? Math.min(...trades24hValues) : 0;
   const trades24hMax = trades24hValues.length ? Math.max(...trades24hValues) : 0;
+  const resolution = queryParams.get('resolution') ?? '30d';
+  const limit = queryParams.get('limit') ?? '1000';
   tokenTopPnlMeta.textContent = list.length
-    ? `GET /v4/tokens/${query}/top-pnl-traders with ${queryParams.toString()} returned ${list.length} row(s).`
-    : `GET /v4/tokens/${query}/top-pnl-traders returned 0 rows.`;
+    ? `GET /v4/tokens/${query}/top-pnl-traders — ${list.length} rows (${resolution}, limit ${limit}).`
+    : `GET /v4/tokens/${query}/top-pnl-traders — 0 rows.`;
   tokenTopPnlBody.innerHTML = list.length
     ? list.map((row, i) => {
       const rank = i + 1;
